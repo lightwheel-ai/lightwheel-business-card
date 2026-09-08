@@ -10,6 +10,12 @@
 }
 @font-face {
   font-family: 'IBM Plex Sans SC';
+  src: url('/fonts/IBMPlexSansSC-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Sans SC';
   src: url('/fonts/IBMPlexSansSC-SemiBold.otf') format('opentype');
   font-weight: 600;
   font-display: swap;
@@ -103,11 +109,11 @@ select {
   container-type: inline-size;
 }
 .card-english {
-  --card-ratio: 1.62533;
+  --card-ratio: 1.6259;
   font-family: 'PingFang SC', 'PingFang TC', sans-serif;
 }
 .card-chinese {
-  --card-ratio: 1.61733;
+  --card-ratio: 1.618;
   font-family: 'IBM Plex Sans SC', sans-serif;
 }
 .template-sheet {
@@ -120,103 +126,44 @@ select {
 .template-sheet-back {
   transform: translateY(-50%);
 }
-.text-mask {
+.card-overlay {
   position: absolute;
+  inset: 0;
   z-index: 1;
-  display: block;
-  background: #fff;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
-.card-name,
-.card-title,
-.card-phone,
-.card-email {
-  position: absolute;
-  z-index: 2;
-  white-space: nowrap;
+.card-overlay rect {
+  fill: #fff;
 }
-.card-english .mask-name {
-  left: 8%;
-  top: 43%;
-  width: 38%;
-  height: 23%;
+.card-overlay text {
+  dominant-baseline: alphabetic;
+  text-rendering: geometricPrecision;
 }
-.card-english .mask-contact {
-  left: 12.4%;
-  top: 69.5%;
-  width: 32%;
-  height: 22%;
-}
-.card-english .card-name {
-  left: 9.1%;
-  top: 48.7%;
-  color: #143e8d;
-  font-size: 4.1cqw;
+.english-primary {
+  fill: #143e8d;
+  font-family: 'PingFang SC', 'PingFang TC', sans-serif;
+  font-size: 21.0575px;
   font-weight: 500;
-  line-height: 1;
 }
-.card-english .card-title {
-  left: 9.1%;
-  top: 56.8%;
-  color: #143e8d;
-  font-size: 3.85cqw;
+.english-contact {
+  fill: #241c1a;
+  font-family: 'PingFang SC', 'PingFang TC', sans-serif;
+  font-size: 14.8641px;
+  font-weight: 400;
+}
+.chinese-primary {
+  fill: #143e8d;
+  font-family: 'IBM Plex Sans SC', sans-serif;
+  font-size: 28.7562px;
   font-weight: 500;
-  line-height: 1;
 }
-.card-english .card-phone {
-  left: 13.1%;
-  top: 73.4%;
-  color: #241c1a;
-  font-size: 2.55cqw;
-  line-height: 1;
-}
-.card-english .card-email {
-  left: 13.1%;
-  top: 83.8%;
-  color: #241c1a;
-  font-size: 2.55cqw;
-  line-height: 1;
-}
-.card-chinese .mask-name {
-  left: 7.8%;
-  top: 35.8%;
-  width: 39%;
-  height: 26%;
-}
-.card-chinese .mask-contact {
-  left: 12.2%;
-  top: 68%;
-  width: 33%;
-  height: 23%;
-}
-.card-chinese .card-name {
-  left: 8.25%;
-  top: 41.3%;
-  color: #143e8d;
-  font-size: 4cqw;
-  font-weight: 600;
-  line-height: 1;
-}
-.card-chinese .card-title {
-  left: 8.25%;
-  top: 52.4%;
-  color: #143e8d;
-  font-size: 4.15cqw;
-  font-weight: 600;
-  line-height: 1;
-}
-.card-chinese .card-phone {
-  left: 12.85%;
-  top: 72.1%;
-  color: #241c1a;
-  font-size: 2.38cqw;
-  line-height: 1;
-}
-.card-chinese .card-email {
-  left: 12.85%;
-  top: 82.6%;
-  color: #241c1a;
-  font-size: 2.38cqw;
-  line-height: 1;
+.chinese-contact {
+  fill: #241c1a;
+  font-family: 'IBM Plex Sans SC', sans-serif;
+  font-size: 14.5px;
+  font-weight: 400;
 }
 .export-rack {
   position: fixed;

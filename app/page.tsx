@@ -28,7 +28,7 @@ const defaults: Record<Template, CardData> = {
   english: {
     name: 'Feng Mao',
     title: 'CFO',
-    phone: '+86–13661977393',
+    phone: '+86-13661977393',
     email: 'feng.mao@lightwheel.ai',
   },
   chinese: {
@@ -64,14 +64,51 @@ function BusinessCard({
         alt=""
       />
       {side === 'front' && (
-        <>
-          <span className="text-mask mask-name" />
-          <span className="text-mask mask-contact" />
-          <div className="card-name">{data.name || '—'}</div>
-          <div className="card-title">{data.title || '—'}</div>
-          <div className="card-phone">{data.phone || '—'}</div>
-          <div className="card-email">{data.email || '—'}</div>
-        </>
+        <svg
+          className="card-overlay"
+          viewBox={
+            template === 'english'
+              ? '0 0 671.445 412.9695'
+              : '0 0 709.87 438.7685'
+          }
+          preserveAspectRatio="none"
+        >
+          {template === 'english' ? (
+            <>
+              <rect x="55" y="203" width="276" height="70" />
+              <rect x="86" y="292" width="244" height="71" />
+              <text className="english-primary" x="61.561" y="224.86">
+                {data.name || '—'}
+              </text>
+              <text className="english-primary" x="61.561" y="249.624">
+                {data.title || '—'}
+              </text>
+              <text className="english-contact" x="91.341" y="309.528">
+                {data.phone || '—'}
+              </text>
+              <text className="english-contact" x="92.0" y="345.089">
+                {data.email || '—'}
+              </text>
+            </>
+          ) : (
+            <>
+              <rect x="55" y="179" width="283" height="103" />
+              <rect x="87" y="310" width="245" height="77" />
+              <text className="chinese-primary" x="61.073" y="206.815">
+                {data.name || '—'}
+              </text>
+              <text className="chinese-primary" x="60.187" y="258.162">
+                {data.title || '—'}
+              </text>
+              <text className="chinese-contact" x="92.131" y="329.114">
+                {data.phone || '—'}
+              </text>
+              <text className="chinese-contact" x="93.306" y="367.037">
+                {data.email || '—'}
+              </text>
+            </>
+          )}
+        </svg>
       )}
     </div>
   );
@@ -138,7 +175,7 @@ export default function Home() {
         toPng(frontExportRef.current, options),
         toPng(backExportRef.current, options),
       ]);
-      const ratio = template === 'english' ? 1.62533 : 1.61733;
+      const ratio = template === 'english' ? 1.6259 : 1.618;
       const width = 90;
       const height = width / ratio;
       const pdf = new jsPDF({
