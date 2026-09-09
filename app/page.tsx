@@ -45,9 +45,9 @@ const assetUrl = (path: string) => `${assetPrefix}${path}`;
 
 const defaults: Record<Template, CardData> = {
   english: {
-    name: '张瑞明',
-    title: '市场总监',
-    phone: '13800008888',
+    name: 'Ruiming Zhang',
+    title: 'Marketing Director',
+    phone: '+86 13800008888',
     email: 'user@lightwheel.ai',
   },
   chinese: {
