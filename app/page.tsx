@@ -24,6 +24,9 @@ import { Textarea } from '@/components/ui/textarea';
 type Template = 'english' | 'chinese';
 type CardData = { name: string; title: string; phone: string; email: string };
 
+const assetPrefix = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+const assetUrl = (path: string) => `${assetPrefix}${path}`;
+
 const defaults: Record<Template, CardData> = {
   english: {
     name: 'Feng Mao',
@@ -60,7 +63,7 @@ function BusinessCard({
       <img
         aria-hidden="true"
         className={`template-sheet ${side === 'back' ? 'template-sheet-back' : ''}`}
-        src={`/templates/${template}-template.png`}
+        src={assetUrl(`/templates/${template}-template.png`)}
         alt=""
       />
       {side === 'front' && (
@@ -205,7 +208,7 @@ export default function Home() {
         <div className="mx-auto flex h-16 max-w-[1480px] items-center justify-between px-5 lg:px-8">
           <div className="flex items-center gap-4">
             <img
-              src="/lightwheel.svg"
+              src={assetUrl('/lightwheel.svg')}
               alt="Lightwheel"
               className="h-7 w-auto"
             />
