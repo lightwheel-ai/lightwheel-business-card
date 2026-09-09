@@ -36,7 +36,6 @@ type PingFangPaths = { medium: PathFace; regular: PathFace };
 
 const blue = rgb(20 / 255, 62 / 255, 141 / 255);
 const nearBlack = rgb(36 / 255, 28 / 255, 26 / 255);
-const white = rgb(1, 1, 1);
 
 const ibmMediumUrl = new URL(
   '../app/fonts/IBMPlexSansSC-Medium.otf',
@@ -158,42 +157,6 @@ function drawPathFaceText(
   }
 }
 
-function coverOriginalText(page: PDFPage, template: Template) {
-  const height = page.getHeight();
-  if (template === 'english') {
-    page.drawRectangle({
-      x: 55,
-      y: height - 273,
-      width: 276,
-      height: 70,
-      color: white,
-    });
-    page.drawRectangle({
-      x: 86,
-      y: height - 363,
-      width: 244,
-      height: 71,
-      color: white,
-    });
-    return;
-  }
-
-  page.drawRectangle({
-    x: 55,
-    y: height - 282,
-    width: 283,
-    height: 103,
-    color: white,
-  });
-  page.drawRectangle({
-    x: 87,
-    y: height - 387,
-    width: 205,
-    height: 77,
-    color: white,
-  });
-}
-
 export async function createVectorCardPdf({
   template,
   data,
@@ -210,7 +173,6 @@ export async function createVectorCardPdf({
 
   const document = await PDFDocument.load(await templateResponse.arrayBuffer());
   const page = document.getPages()[0];
-  coverOriginalText(page, template);
 
   if (template === 'english') {
     const pingFang = await loadPingFangPaths(assetUrl);

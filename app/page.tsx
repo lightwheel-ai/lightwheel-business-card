@@ -71,7 +71,7 @@ function BusinessCard({
       <img
         aria-hidden="true"
         className="template-sheet"
-        src={assetUrl(`/templates/${template}-template.svg?v=logo-fix-2`)}
+        src={assetUrl(`/templates/${template}-template.svg?v=clean-template-1`)}
         alt=""
       />
       <svg
@@ -83,8 +83,6 @@ function BusinessCard({
       >
         {template === 'english' ? (
           <>
-            <rect x="55" y="203" width="276" height="70" fill="#fff" />
-            <rect x="86" y="292" width="244" height="71" fill="#fff" />
             <text
               className="english-primary"
               x="61.561"
@@ -132,8 +130,6 @@ function BusinessCard({
           </>
         ) : (
           <>
-            <rect x="55" y="179" width="283" height="103" fill="#fff" />
-            <rect x="87" y="310" width="205" height="77" fill="#fff" />
             <text
               className="chinese-primary"
               x="61.073"
