@@ -133,6 +133,7 @@ select {
 }
 .card-overlay text {
   dominant-baseline: alphabetic;
+  font-synthesis: none;
   text-rendering: geometricPrecision;
 }
 .english-primary {

@@ -7,12 +7,12 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     'https://lightwheel-ai.github.io/lightwheel-business-card/',
   ),
-  title: 'Lightwheel Business Card',
+  title: '自动生成名片 | Lightwheel',
   description:
-    'Generate template-perfect Lightwheel business cards and download a print-ready PDF.',
+    'Generate template-perfect Lightwheel business cards and save them as PDF or PNG.',
   openGraph: {
-    title: 'Lightwheel Business Card',
-    description: 'Bilingual cards, ready as PDF.',
+    title: '自动生成名片 | Lightwheel',
+    description: 'Bilingual cards, ready as PDF or PNG.',
     images: [
       {
         url: 'https://lightwheel-ai.github.io/lightwheel-business-card/og.png',
@@ -23,8 +23,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Lightwheel Business Card',
-    description: 'Bilingual cards, ready as PDF.',
+    title: '自动生成名片 | Lightwheel',
+    description: 'Bilingual cards, ready as PDF or PNG.',
     images: ['https://lightwheel-ai.github.io/lightwheel-business-card/og.png'],
   },
 };
