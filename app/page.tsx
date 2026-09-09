@@ -243,12 +243,8 @@ export default function Home() {
               value={template}
               onChange={(event) => setTemplate(event.target.value as Template)}
             >
-              <NativeSelectOption value="english">
-                英文模板 · PingFang
-              </NativeSelectOption>
-              <NativeSelectOption value="chinese">
-                中文模板 · IBM Plex Sans SC
-              </NativeSelectOption>
+              <NativeSelectOption value="english">英文模板</NativeSelectOption>
+              <NativeSelectOption value="chinese">中文模板</NativeSelectOption>
             </NativeSelect>
           </div>
 
