@@ -23,6 +23,13 @@ import { Textarea } from '@/components/ui/textarea';
 
 type Template = 'english' | 'chinese';
 type CardData = { name: string; title: string; phone: string; email: string };
+type ExportState =
+  | 'idle'
+  | 'pdf-working'
+  | 'png-working'
+  | 'pdf-done'
+  | 'png-done'
+  | 'error';
 
 const assetPrefix = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 const assetUrl = (path: string) => `${assetPrefix}${path}`;
@@ -44,12 +51,10 @@ const defaults: Record<Template, CardData> = {
 
 function BusinessCard({
   template,
-  side,
   data,
   cardRef,
 }: {
   template: Template;
-  side: 'front' | 'back';
   data: CardData;
   cardRef?: Ref<HTMLDivElement>;
 }) {
@@ -58,61 +63,120 @@ function BusinessCard({
       ref={cardRef}
       className={`business-card card-${template}`}
       data-template={template}
-      data-side={side}
     >
       <img
         aria-hidden="true"
-        className={`template-sheet ${side === 'back' ? 'template-sheet-back' : ''}`}
+        className="template-sheet"
         src={assetUrl(`/templates/${template}-template.png`)}
         alt=""
       />
-      {side === 'front' && (
-        <svg
-          className="card-overlay"
-          viewBox={
-            template === 'english'
-              ? '0 0 671.445 412.9695'
-              : '0 0 709.87 438.7685'
-          }
-          preserveAspectRatio="none"
-        >
-          {template === 'english' ? (
-            <>
-              <rect x="55" y="203" width="276" height="70" />
-              <rect x="86" y="292" width="244" height="71" />
-              <text className="english-primary" x="61.561" y="224.86">
-                {data.name || '—'}
-              </text>
-              <text className="english-primary" x="61.561" y="249.624">
-                {data.title || '—'}
-              </text>
-              <text className="english-contact" x="91.341" y="309.528">
-                {data.phone || '—'}
-              </text>
-              <text className="english-contact" x="92.0" y="345.089">
-                {data.email || '—'}
-              </text>
-            </>
-          ) : (
-            <>
-              <rect x="55" y="179" width="283" height="103" />
-              <rect x="87" y="310" width="245" height="77" />
-              <text className="chinese-primary" x="61.073" y="206.815">
-                {data.name || '—'}
-              </text>
-              <text className="chinese-primary" x="60.187" y="258.162">
-                {data.title || '—'}
-              </text>
-              <text className="chinese-contact" x="92.131" y="329.114">
-                {data.phone || '—'}
-              </text>
-              <text className="chinese-contact" x="93.306" y="367.037">
-                {data.email || '—'}
-              </text>
-            </>
-          )}
-        </svg>
-      )}
+      <svg
+        className="card-overlay"
+        viewBox={
+          template === 'english' ? '0 0 671.445 825.939' : '0 0 709.87 877.537'
+        }
+        preserveAspectRatio="none"
+      >
+        {template === 'english' ? (
+          <>
+            <rect x="55" y="203" width="276" height="70" fill="#fff" />
+            <rect x="86" y="292" width="244" height="71" fill="#fff" />
+            <text
+              className="english-primary"
+              x="61.561"
+              y="224.86"
+              fill="#143e8d"
+              fontFamily="PingFang SC, PingFang TC, sans-serif"
+              fontSize="21.0575"
+              fontWeight="500"
+            >
+              {data.name || '—'}
+            </text>
+            <text
+              className="english-primary"
+              x="61.561"
+              y="249.624"
+              fill="#143e8d"
+              fontFamily="PingFang SC, PingFang TC, sans-serif"
+              fontSize="21.0575"
+              fontWeight="500"
+            >
+              {data.title || '—'}
+            </text>
+            <text
+              className="english-contact"
+              x="91.341"
+              y="309.528"
+              fill="#241c1a"
+              fontFamily="PingFang SC, PingFang TC, sans-serif"
+              fontSize="14.8641"
+              fontWeight="400"
+            >
+              {data.phone || '—'}
+            </text>
+            <text
+              className="english-contact"
+              x="92.0"
+              y="345.089"
+              fill="#241c1a"
+              fontFamily="PingFang SC, PingFang TC, sans-serif"
+              fontSize="14.8641"
+              fontWeight="400"
+            >
+              {data.email || '—'}
+            </text>
+          </>
+        ) : (
+          <>
+            <rect x="55" y="179" width="283" height="103" fill="#fff" />
+            <rect x="87" y="310" width="245" height="77" fill="#fff" />
+            <text
+              className="chinese-primary"
+              x="61.073"
+              y="206.815"
+              fill="#143e8d"
+              fontFamily="IBM Plex Sans SC, sans-serif"
+              fontSize="28.7562"
+              fontWeight="500"
+            >
+              {data.name || '—'}
+            </text>
+            <text
+              className="chinese-primary"
+              x="60.187"
+              y="258.162"
+              fill="#143e8d"
+              fontFamily="IBM Plex Sans SC, sans-serif"
+              fontSize="28.7562"
+              fontWeight="500"
+            >
+              {data.title || '—'}
+            </text>
+            <text
+              className="chinese-contact"
+              x="92.131"
+              y="329.114"
+              fill="#241c1a"
+              fontFamily="IBM Plex Sans SC, sans-serif"
+              fontSize="14.5"
+              fontWeight="400"
+            >
+              {data.phone || '—'}
+            </text>
+            <text
+              className="chinese-contact"
+              x="93.306"
+              y="367.037"
+              fill="#241c1a"
+              fontFamily="IBM Plex Sans SC, sans-serif"
+              fontSize="14.5"
+              fontWeight="400"
+            >
+              {data.email || '—'}
+            </text>
+          </>
+        )}
+      </svg>
     </div>
   );
 }
@@ -121,16 +185,15 @@ export default function Home() {
   const [template, setTemplate] = useState<Template>('english');
   const [values, setValues] = useState<Record<Template, CardData>>(defaults);
   const [bulk, setBulk] = useState('');
-  const [exportState, setExportState] = useState<
-    'idle' | 'working' | 'done' | 'error'
-  >('idle');
-  const frontExportRef = useRef<HTMLDivElement>(null);
-  const backExportRef = useRef<HTMLDivElement>(null);
+  const [exportState, setExportState] = useState<ExportState>('idle');
+  const exportRef = useRef<HTMLDivElement>(null);
   const data = values[template];
   const templateLabel = useMemo(
-    () => (template === 'english' ? 'English template' : '中文模板'),
+    () => (template === 'english' ? '英文模板' : '中文模板'),
     [template],
   );
+  const isExporting =
+    exportState === 'pdf-working' || exportState === 'png-working';
 
   function update(field: keyof CardData, value: string) {
     setValues((current) => ({
@@ -139,62 +202,98 @@ export default function Home() {
     }));
   }
 
-  function recognize() {
-    const lines = bulk
-      .split(/\n|\r|\t/)
+  function recognize(value: string) {
+    setBulk(value);
+    const lines = value
+      .split(/\n|\r|\t|[;；]/)
       .map((line) => line.trim())
       .filter(Boolean);
-    const email = lines.find((line) => /\S+@\S+\.\S+/.test(line));
-    const phone = lines.find((line) => /(?:\+?\d[\d\s()–—-]{6,}\d)/.test(line));
-    const plain = lines.filter((line) => line !== email && line !== phone);
+
+    if (!lines.length) return;
+
+    const extractLabeled = (labels: string[]) => {
+      const pattern = new RegExp(
+        `^(?:${labels.join('|')})\\s*[:：]\\s*(.+)$`,
+        'i',
+      );
+      return lines
+        .map((line) => line.match(pattern)?.[1]?.trim())
+        .find(Boolean);
+    };
+    const email = value.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/)?.[0];
+    const phone = value.match(/(?:\+?\d[\d\s()–—-]{6,}\d)/)?.[0]?.trim();
+    const labeledName = extractLabeled(['姓名', '名字', 'name']);
+    const labeledTitle = extractLabeled(['职位', '职务', 'title', 'position']);
+    const plain = lines
+      .filter((line) => !/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/.test(line))
+      .filter((line) => !/(?:\+?\d[\d\s()–—-]{6,}\d)/.test(line))
+      .filter(
+        (line) =>
+          !/^(?:姓名|名字|name|职位|职务|title|position)\s*[:：]/i.test(line),
+      );
+
     setValues((current) => ({
       ...current,
       [template]: {
-        name: plain[0] || current[template].name,
-        title: plain[1] || current[template].title,
+        name: labeledName || plain[0] || current[template].name,
+        title: labeledTitle || plain[1] || current[template].title,
         phone: phone || current[template].phone,
         email: email || current[template].email,
       },
     }));
   }
 
-  async function exportPdf() {
-    if (
-      !frontExportRef.current ||
-      !backExportRef.current ||
-      exportState === 'working'
-    )
-      return;
+  function safeFileName() {
+    return (data.name || 'Lightwheel').trim().replace(/[\\/:*?"<>|]+/g, '-');
+  }
 
-    setExportState('working');
+  async function renderCard() {
+    if (!exportRef.current) throw new Error('Export card is not ready.');
+    await document.fonts.ready;
+    return toPng(exportRef.current, {
+      cacheBust: true,
+      pixelRatio: 2.4,
+      backgroundColor: '#ffffff',
+    });
+  }
+
+  async function exportPdf() {
+    if (!exportRef.current || isExporting) return;
+
+    setExportState('pdf-working');
     try {
-      await document.fonts.ready;
-      const options = {
-        cacheBust: true,
-        pixelRatio: 2.4,
-        backgroundColor: '#ffffff',
-      };
-      const [front, back] = await Promise.all([
-        toPng(frontExportRef.current, options),
-        toPng(backExportRef.current, options),
-      ]);
-      const ratio = template === 'english' ? 1.6259 : 1.618;
+      const image = await renderCard();
+      const ratio =
+        template === 'english' ? 671.445 / 825.939 : 709.87 / 877.537;
       const width = 90;
       const height = width / ratio;
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: 'portrait',
         unit: 'mm',
-        format: [height, width],
+        format: [width, height],
         compress: true,
       });
-      pdf.addImage(front, 'PNG', 0, 0, width, height, undefined, 'FAST');
-      pdf.addPage([height, width], 'landscape');
-      pdf.addImage(back, 'PNG', 0, 0, width, height, undefined, 'FAST');
-      const safeName = (data.name || 'Lightwheel')
-        .trim()
-        .replace(/[\\/:*?"<>|]+/g, '-');
-      pdf.save(`${safeName}-${template}-business-card.pdf`);
-      setExportState('done');
+      pdf.addImage(image, 'PNG', 0, 0, width, height, undefined, 'FAST');
+      pdf.save(`${safeFileName()}-${template}-business-card.pdf`);
+      setExportState('pdf-done');
+      window.setTimeout(() => setExportState('idle'), 2200);
+    } catch (error) {
+      console.error(error);
+      setExportState('error');
+    }
+  }
+
+  async function exportPng() {
+    if (!exportRef.current || isExporting) return;
+
+    setExportState('png-working');
+    try {
+      const image = await renderCard();
+      const link = document.createElement('a');
+      link.download = `${safeFileName()}-${template}-business-card.png`;
+      link.href = image;
+      link.click();
+      setExportState('png-done');
       window.setTimeout(() => setExportState('idle'), 2200);
     } catch (error) {
       console.error(error);
@@ -255,18 +354,12 @@ export default function Home() {
             </div>
             <Textarea
               value={bulk}
-              onChange={(event) => setBulk(event.target.value)}
-              placeholder={'粘贴姓名、职位、电话和邮箱\n每项一行即可'}
+              onChange={(event) => recognize(event.target.value)}
+              placeholder={
+                '输入或粘贴姓名、职位、电话和邮箱\n每项一行，下方会自动填入'
+              }
               className="min-h-24 resize-none bg-white"
             />
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-3 h-9 w-full bg-white"
-              onClick={recognize}
-            >
-              自动识别并填入
-            </Button>
           </div>
 
           <div className="my-5 h-px bg-[#e5e9f0]" />
@@ -292,25 +385,47 @@ export default function Home() {
             ))}
           </div>
 
-          <Button
-            type="button"
-            className="mt-6 h-11 w-full bg-[#17428f] text-white"
-            onClick={exportPdf}
-            disabled={exportState === 'working'}
-          >
-            {exportState === 'working' ? (
-              <LoaderCircle className="size-4 animate-spin" />
-            ) : exportState === 'done' ? (
-              <Check className="size-4" />
-            ) : (
-              <Download className="size-4" />
-            )}
-            {exportState === 'working'
-              ? '正在生成 PDF…'
-              : exportState === 'done'
-                ? 'PDF 已下载'
-                : '下载双面 PDF'}
-          </Button>
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            <Button
+              type="button"
+              className="h-11 bg-[#17428f] text-white"
+              onClick={exportPdf}
+              disabled={isExporting}
+            >
+              {exportState === 'pdf-working' ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : exportState === 'pdf-done' ? (
+                <Check className="size-4" />
+              ) : (
+                <Download className="size-4" />
+              )}
+              {exportState === 'pdf-working'
+                ? '正在生成…'
+                : exportState === 'pdf-done'
+                  ? '已下载'
+                  : 'PDF下载'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 bg-white"
+              onClick={exportPng}
+              disabled={isExporting}
+            >
+              {exportState === 'png-working' ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : exportState === 'png-done' ? (
+                <Check className="size-4" />
+              ) : (
+                <Download className="size-4" />
+              )}
+              {exportState === 'png-working'
+                ? '正在生成…'
+                : exportState === 'png-done'
+                  ? '已下载'
+                  : 'PNG下载'}
+            </Button>
+          </div>
           {exportState === 'error' && (
             <p className="mt-2 text-center text-xs text-[#b4232f]">
               生成失败，请刷新页面后重试。
@@ -326,35 +441,19 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-2 text-xs text-[#697386]">
               <FileText className="size-4" />
-              正反面 · PDF
+              完整名片 · PDF / PNG
             </div>
           </div>
           <div className="preview-stage">
             <div className="preview-item">
-              <span>正面</span>
-              <BusinessCard template={template} side="front" data={data} />
-            </div>
-            <div className="preview-item">
-              <span>背面</span>
-              <BusinessCard template={template} side="back" data={data} />
+              <BusinessCard template={template} data={data} />
             </div>
           </div>
         </section>
       </div>
 
       <div className="export-rack" aria-hidden="true">
-        <BusinessCard
-          template={template}
-          side="front"
-          data={data}
-          cardRef={frontExportRef}
-        />
-        <BusinessCard
-          template={template}
-          side="back"
-          data={data}
-          cardRef={backExportRef}
-        />
+        <BusinessCard template={template} data={data} cardRef={exportRef} />
       </div>
     </main>
   );
