@@ -214,7 +214,7 @@ export default function Home() {
             />
             <span className="hidden h-5 w-px bg-[#dfe4ec] sm:block" />
             <span className="hidden text-sm font-medium text-[#697386] sm:block">
-              Business Card Studio
+              Business Card
             </span>
           </div>
           <span className="rounded-full bg-[#eef3ff] px-3 py-1.5 text-xs font-medium text-[#17428f]">

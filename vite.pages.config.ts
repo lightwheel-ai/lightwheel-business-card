@@ -3,7 +3,7 @@ import tailwindcss from '@tailwindcss/postcss';
 import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 
-const repositoryBasePath = '/lightwheel-business-card-studio';
+const repositoryBasePath = '/lightwheel-business-card';
 
 export default defineConfig({
   root: fileURLToPath(new URL('./pages-src', import.meta.url)),
