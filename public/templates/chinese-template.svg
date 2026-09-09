@@ -192,11 +192,13 @@
 </g>
 <defs>
 <linearGradient id="logo-bottom-fix" x1="217.32" y1="666.42" x2="279.52" y2="689.79" gradientUnits="userSpaceOnUse">
-<stop offset="0" stop-color="#4028f5"/>
-<stop offset="1" stop-color="#9185ff"/>
+<stop offset="0" stop-color="#4a2bfc"/>
+<stop offset="0.52" stop-color="#6f77fc"/>
+<stop offset="0.74" stop-color="#829ffb"/>
+<stop offset="1" stop-color="#7775f4"/>
 </linearGradient>
 </defs>
-<g aria-label="corrected reverse logo mark" shape-rendering="geometricPrecision">
+<g aria-label="corrected blue gradient logo mark" shape-rendering="geometricPrecision">
 <rect x="214" y="622" width="69" height="70" fill="#0d0e0e"/>
 <path fill="url(#logo-bottom-fix)" d="M279.523 672.368 L250.086 689.335 C249.58 689.629 249.003 689.785 248.414 689.785 C247.826 689.785 247.249 689.629 246.742 689.335 L217.32 672.406 L227.684 666.428 L246.742 677.417 C247.249 677.711 247.826 677.872 248.414 677.872 C249.003 677.872 249.58 677.711 250.086 677.417 L269.16 666.428 Z"/>
 <path fill="#fff" d="M250.109 659.391 C249.602 659.688 249.023 659.84 248.438 659.84 C247.852 659.84 247.273 659.688 246.766 659.391 L227.684 648.402 L217.32 654.383 L246.742 671.352 C247.25 671.648 247.828 671.801 248.414 671.801 C249 671.801 249.578 671.648 250.086 671.352 L279.523 654.383 L269.16 648.402 Z"/>
