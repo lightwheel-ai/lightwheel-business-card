@@ -193,7 +193,7 @@ export default function Home() {
   const exportRef = useRef<HTMLDivElement>(null);
   const data = values[template];
   const templateLabel = useMemo(
-    () => (template === 'english' ? '英文模板预览' : '中文模板预览'),
+    () => (template === 'english' ? '英文名片预览' : '中文名片预览'),
     [template],
   );
   const isExporting =
@@ -362,7 +362,7 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-[1480px] gap-5 px-5 py-5 lg:grid-cols-2 lg:px-8">
+      <div className="workspace-grid mx-auto grid max-w-[1480px] gap-5 px-5 py-5 lg:grid-cols-2 lg:px-8">
         <section className="editor-panel">
           <div className="mb-6">
             <h1 className="text-2xl font-semibold tracking-[-0.025em]">

@@ -78,6 +78,7 @@ select {
 .preview-stage {
   display: flex;
   flex: 1;
+  min-height: 0;
   align-items: center;
   justify-content: center;
   border-radius: 14px;
@@ -162,6 +163,14 @@ select {
 }
 .export-rack .business-card {
   box-shadow: none;
+}
+@media (min-width: 1024px) {
+  .workspace-grid {
+    min-height: calc(100svh - 4rem);
+  }
+  .preview-item {
+    width: min(100%, 460px, calc(80.893svh - 12.134rem));
+  }
 }
 @media (max-width: 640px) {
   .editor-panel,
