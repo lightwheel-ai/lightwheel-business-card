@@ -29,16 +29,16 @@ const assetUrl = (path: string) => `${assetPrefix}${path}`;
 
 const defaults: Record<Template, CardData> = {
   english: {
-    name: 'Feng Mao',
-    title: 'CFO',
-    phone: '+86-13661977393',
-    email: 'feng.mao@lightwheel.ai',
+    name: '名字',
+    title: '职位',
+    phone: '+86 175 12561273',
+    email: 'user@lightwheel.ai',
   },
   chinese: {
-    name: '金朱钢',
-    title: '投融资总监',
-    phone: '15810997659',
-    email: 'zhugang.jin@lightwheel.ai',
+    name: '名字',
+    title: '职位',
+    phone: '+86 175 12561273',
+    email: 'user@lightwheel.ai',
   },
 };
 
@@ -223,7 +223,7 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-[1480px] gap-6 px-5 py-7 lg:grid-cols-[380px_minmax(0,1fr)] lg:px-8">
+      <div className="mx-auto grid max-w-[1480px] gap-5 px-5 py-5 lg:grid-cols-[380px_minmax(0,1fr)] lg:px-8">
         <section className="editor-panel">
           <div className="mb-6">
             <p className="eyebrow">Card details</p>
@@ -248,6 +248,27 @@ export default function Home() {
             </NativeSelect>
           </div>
 
+          <div className="mt-5 rounded-xl border border-[#dbe3f2] bg-[#f7f9fd] p-4">
+            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#17428f]">
+              <Sparkles className="size-4" />
+              智能识别
+            </div>
+            <Textarea
+              value={bulk}
+              onChange={(event) => setBulk(event.target.value)}
+              placeholder={'粘贴姓名、职位、电话和邮箱\n每项一行即可'}
+              className="min-h-24 resize-none bg-white"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-3 h-9 w-full bg-white"
+              onClick={recognize}
+            >
+              自动识别并填入
+            </Button>
+          </div>
+
           <div className="my-5 h-px bg-[#e5e9f0]" />
 
           <div className="grid gap-4">
@@ -269,27 +290,6 @@ export default function Home() {
                 />
               </div>
             ))}
-          </div>
-
-          <div className="mt-6 rounded-xl border border-[#dbe3f2] bg-[#f7f9fd] p-4">
-            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#17428f]">
-              <Sparkles className="size-4" />
-              智能识别
-            </div>
-            <Textarea
-              value={bulk}
-              onChange={(event) => setBulk(event.target.value)}
-              placeholder={'粘贴姓名、职位、电话和邮箱\n每项一行即可'}
-              className="min-h-24 resize-none bg-white"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-3 h-9 w-full bg-white"
-              onClick={recognize}
-            >
-              自动识别并填入
-            </Button>
           </div>
 
           <Button
@@ -319,7 +319,7 @@ export default function Home() {
         </section>
 
         <section className="preview-panel">
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="eyebrow">Preview</p>
               <h2 className="mt-1 text-xl font-semibold">{templateLabel}</h2>

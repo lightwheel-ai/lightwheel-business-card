@@ -70,8 +70,9 @@ select {
   align-self: start;
 }
 .preview-panel {
-  padding: 26px;
+  padding: 22px;
   min-width: 0;
+  align-self: start;
 }
 .eyebrow {
   margin: 0;
@@ -83,15 +84,15 @@ select {
 }
 .preview-stage {
   display: grid;
-  gap: 28px;
+  gap: 18px;
   border-radius: 14px;
   background: #edf0f5;
-  padding: clamp(20px, 4vw, 46px);
+  padding: clamp(16px, 2vw, 24px);
 }
 .preview-item {
   display: grid;
-  gap: 9px;
-  width: min(100%, 760px);
+  gap: 7px;
+  width: min(100%, 620px);
   margin: 0 auto;
 }
 .preview-item > span {
@@ -175,6 +176,15 @@ select {
 }
 .export-rack .business-card {
   box-shadow: none;
+}
+@media (min-width: 1024px) {
+  .preview-stage {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  .preview-item {
+    width: 100%;
+  }
 }
 @media (max-width: 640px) {
   .editor-panel,
