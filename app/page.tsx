@@ -3,7 +3,6 @@
 
 import { type Ref, useMemo, useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
-import { jsPDF } from 'jspdf';
 import { Check, Download, FileText, LoaderCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -71,7 +70,7 @@ function BusinessCard({
       <img
         aria-hidden="true"
         className="template-sheet"
-        src={assetUrl(`/templates/${template}-template.png`)}
+        src={assetUrl(`/templates/${template}-template.svg`)}
         alt=""
       />
       <svg
@@ -230,7 +229,7 @@ export default function Home() {
     await document.fonts.ready;
     return toPng(exportRef.current, {
       cacheBust: true,
-      pixelRatio: 2.4,
+      pixelRatio: 3.2,
       backgroundColor: '#ffffff',
     });
   }
@@ -295,23 +294,13 @@ export default function Home() {
       const fileName = `${safeFileName()}-${template}-business-card.pdf`;
       const fileHandle = await selectSaveLocation(
         fileName,
-        'PDF 文件',
+        '矢量 PDF 文件',
         'application/pdf',
         '.pdf',
       );
-      const image = await renderCard();
-      const ratio =
-        template === 'english' ? 671.445 / 825.939 : 709.87 / 877.537;
-      const width = 90;
-      const height = width / ratio;
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: [width, height],
-        compress: true,
-      });
-      pdf.addImage(image, 'PNG', 0, 0, width, height, undefined, 'FAST');
-      await saveBlob(pdf.output('blob'), fileName, fileHandle);
+      const { createVectorCardPdf } = await import('@/lib/vector-pdf');
+      const pdf = await createVectorCardPdf({ template, data, assetUrl });
+      await saveBlob(pdf, fileName, fileHandle);
       setExportState('pdf-done');
       window.setTimeout(() => setExportState('idle'), 2200);
     } catch (error) {
@@ -439,7 +428,7 @@ export default function Home() {
                 ? '正在生成…'
                 : exportState === 'pdf-done'
                   ? '已下载'
-                  : 'PDF下载'}
+                  : '矢量 PDF 下载'}
             </Button>
             <Button
               type="button"
@@ -468,6 +457,8 @@ export default function Home() {
             </p>
           )}
           <p className="mt-3 text-center text-xs leading-5 text-[#697386]">
+            PDF 全部转曲且不含位图；PNG 为 3.2 倍高清输出
+            <br />
             下载时会弹出保存位置选择（不支持时按浏览器设置下载）
           </p>
         </section>
@@ -479,7 +470,7 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-2 text-xs text-[#697386]">
               <FileText className="size-4" />
-              完整名片 · PDF / PNG
+              完整名片 · 转曲 PDF / 高清 PNG
             </div>
           </div>
           <div className="preview-stage">
