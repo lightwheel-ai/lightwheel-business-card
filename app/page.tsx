@@ -24,6 +24,7 @@ type ExportState =
   | 'pdf-done'
   | 'png-done'
   | 'error';
+type TranslationState = 'idle' | 'working' | 'done' | 'error';
 type SavePickerWindow = Window & {
   showSaveFilePicker?: (options: {
     suggestedName: string;
@@ -189,7 +190,11 @@ export default function Home() {
   const [values, setValues] = useState<Record<Template, CardData>>(defaults);
   const [bulk, setBulk] = useState('');
   const [exportState, setExportState] = useState<ExportState>('idle');
+  const [translationState, setTranslationState] =
+    useState<TranslationState>('idle');
   const exportRef = useRef<HTMLDivElement>(null);
+  const translationRequestRef = useRef(0);
+  const translationAbortRef = useRef<AbortController | null>(null);
   const data = values[template];
   const templateLabel = useMemo(
     () => (template === 'english' ? '英文名片预览' : '中文名片预览'),
@@ -199,10 +204,83 @@ export default function Home() {
     exportState === 'pdf-working' || exportState === 'png-working';
 
   function update(field: keyof CardData, value: string) {
+    if (
+      translationState === 'working' &&
+      (field === 'name' || field === 'title')
+    ) {
+      translationRequestRef.current += 1;
+      translationAbortRef.current?.abort();
+      setTranslationState('idle');
+    }
     setValues((current) => ({
       ...current,
       [template]: { ...current[template], [field]: value },
     }));
+  }
+
+  async function switchTemplate(nextTemplate: Template) {
+    if (nextTemplate === template) return;
+
+    const sourceTemplate = template;
+    const sourceData = values[sourceTemplate];
+    const requestId = translationRequestRef.current + 1;
+    translationRequestRef.current = requestId;
+    translationAbortRef.current?.abort();
+    const controller = new AbortController();
+    translationAbortRef.current = controller;
+
+    setTemplate(nextTemplate);
+    setTranslationState('working');
+
+    try {
+      const { translateName, translateTitle } =
+        await import('@/lib/translator');
+      const [nameResult, titleResult] = await Promise.allSettled([
+        translateName(
+          sourceData.name,
+          sourceTemplate,
+          nextTemplate,
+          controller.signal,
+        ),
+        translateTitle(
+          sourceData.title,
+          sourceTemplate,
+          nextTemplate,
+          controller.signal,
+        ),
+      ]);
+
+      if (translationRequestRef.current !== requestId) return;
+
+      setValues((current) => ({
+        ...current,
+        [nextTemplate]: {
+          ...current[nextTemplate],
+          name:
+            nameResult.status === 'fulfilled'
+              ? nameResult.value
+              : current[nextTemplate].name,
+          title:
+            titleResult.status === 'fulfilled'
+              ? titleResult.value
+              : current[nextTemplate].title,
+        },
+      }));
+
+      const succeeded =
+        nameResult.status === 'fulfilled' && titleResult.status === 'fulfilled';
+      setTranslationState(succeeded ? 'done' : 'error');
+      window.setTimeout(() => {
+        if (translationRequestRef.current === requestId) {
+          setTranslationState('idle');
+        }
+      }, 2600);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      if (translationRequestRef.current === requestId) {
+        setTranslationState('error');
+      }
+    }
   }
 
   function recognize(value: string) {
@@ -363,12 +441,36 @@ export default function Home() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="template">模板</Label>
+            <div className="flex min-h-5 items-center justify-between gap-3">
+              <Label htmlFor="template">模板</Label>
+              <output
+                className={`flex items-center gap-1.5 text-right text-xs ${
+                  translationState === 'error'
+                    ? 'text-[#b4232f]'
+                    : 'text-[#697386]'
+                }`}
+              >
+                {translationState === 'working' ? (
+                  <LoaderCircle className="size-3.5 animate-spin" />
+                ) : translationState === 'done' ? (
+                  <Check className="size-3.5" />
+                ) : null}
+                {translationState === 'idle'
+                  ? '姓名和职位由 MyMemory 自动翻译'
+                  : translationState === 'working'
+                    ? '正在翻译姓名和职位…'
+                    : translationState === 'done'
+                      ? '已自动翻译'
+                      : '部分内容翻译失败，请手动检查'}
+              </output>
+            </div>
             <NativeSelect
               id="template"
               className="w-full"
               value={template}
-              onChange={(event) => setTemplate(event.target.value as Template)}
+              onChange={(event) =>
+                void switchTemplate(event.target.value as Template)
+              }
             >
               <NativeSelectOption value="chinese">中文模板</NativeSelectOption>
               <NativeSelectOption value="english">英文模板</NativeSelectOption>
