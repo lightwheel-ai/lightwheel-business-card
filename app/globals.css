@@ -75,14 +75,6 @@ select {
   padding: 22px;
   min-width: 0;
 }
-.eyebrow {
-  margin: 0;
-  color: #315dab;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
 .preview-stage {
   display: flex;
   flex: 1;

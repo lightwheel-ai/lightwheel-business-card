@@ -4,13 +4,7 @@
 import { type Ref, useMemo, useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import {
-  Check,
-  Download,
-  FileText,
-  LoaderCircle,
-  Sparkles,
-} from 'lucide-react';
+import { Check, Download, FileText, LoaderCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +14,7 @@ import {
   NativeSelectOption,
 } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
+import { parseCardData } from '@/lib/card-parser';
 
 type Template = 'english' | 'chinese';
 type CardData = { name: string; title: string; phone: string; email: string };
@@ -191,14 +186,14 @@ function BusinessCard({
 }
 
 export default function Home() {
-  const [template, setTemplate] = useState<Template>('english');
+  const [template, setTemplate] = useState<Template>('chinese');
   const [values, setValues] = useState<Record<Template, CardData>>(defaults);
   const [bulk, setBulk] = useState('');
   const [exportState, setExportState] = useState<ExportState>('idle');
   const exportRef = useRef<HTMLDivElement>(null);
   const data = values[template];
   const templateLabel = useMemo(
-    () => (template === 'english' ? '英文模板' : '中文模板'),
+    () => (template === 'english' ? '英文模板预览' : '中文模板预览'),
     [template],
   );
   const isExporting =
@@ -213,41 +208,15 @@ export default function Home() {
 
   function recognize(value: string) {
     setBulk(value);
-    const lines = value
-      .split(/\n|\r|\t|[;；]/)
-      .map((line) => line.trim())
-      .filter(Boolean);
-
-    if (!lines.length) return;
-
-    const extractLabeled = (labels: string[]) => {
-      const pattern = new RegExp(
-        `^(?:${labels.join('|')})\\s*[:：]\\s*(.+)$`,
-        'i',
-      );
-      return lines
-        .map((line) => line.match(pattern)?.[1]?.trim())
-        .find(Boolean);
-    };
-    const email = value.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/)?.[0];
-    const phone = value.match(/(?:\+?\d[\d\s()–—-]{6,}\d)/)?.[0]?.trim();
-    const labeledName = extractLabeled(['姓名', '名字', 'name']);
-    const labeledTitle = extractLabeled(['职位', '职务', 'title', 'position']);
-    const plain = lines
-      .filter((line) => !/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/.test(line))
-      .filter((line) => !/(?:\+?\d[\d\s()–—-]{6,}\d)/.test(line))
-      .filter(
-        (line) =>
-          !/^(?:姓名|名字|name|职位|职务|title|position)\s*[:：]/i.test(line),
-      );
+    const parsed = parseCardData(value);
 
     setValues((current) => ({
       ...current,
       [template]: {
-        name: labeledName || plain[0] || current[template].name,
-        title: labeledTitle || plain[1] || current[template].title,
-        phone: phone || current[template].phone,
-        email: email || current[template].email,
+        name: parsed.name ?? defaults[template].name,
+        title: parsed.title ?? defaults[template].title,
+        phone: parsed.phone ?? defaults[template].phone,
+        email: parsed.email ?? defaults[template].email,
       },
     }));
   }
@@ -388,7 +357,7 @@ export default function Home() {
             </span>
           </div>
           <span className="rounded-full bg-[#eef3ff] px-3 py-1.5 text-xs font-medium text-[#17428f]">
-            Live preview
+            实时预览
           </span>
         </div>
       </header>
@@ -396,8 +365,7 @@ export default function Home() {
       <div className="mx-auto grid max-w-[1480px] gap-5 px-5 py-5 lg:grid-cols-2 lg:px-8">
         <section className="editor-panel">
           <div className="mb-6">
-            <p className="eyebrow">Card details</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-[-0.025em]">
+            <h1 className="text-2xl font-semibold tracking-[-0.025em]">
               自动生成名片
             </h1>
             <p className="mt-2 text-sm leading-6 text-[#697386]">
@@ -413,23 +381,20 @@ export default function Home() {
               value={template}
               onChange={(event) => setTemplate(event.target.value as Template)}
             >
-              <NativeSelectOption value="english">英文模板</NativeSelectOption>
               <NativeSelectOption value="chinese">中文模板</NativeSelectOption>
+              <NativeSelectOption value="english">英文模板</NativeSelectOption>
             </NativeSelect>
           </div>
 
-          <div className="smart-recognition mt-5 rounded-2xl border-2 border-[#afc0e2] bg-[#f4f7ff] p-5 shadow-[0_10px_28px_rgba(23,66,143,0.08)]">
-            <div className="mb-3 flex items-center gap-2 text-base font-semibold text-[#17428f]">
-              <Sparkles className="size-4" />
-              智能识别
-            </div>
+          <div className="mt-5">
             <Textarea
+              aria-label="智能识别"
               value={bulk}
               onChange={(event) => recognize(event.target.value)}
               placeholder={
-                '输入或粘贴姓名、职位、电话和邮箱\n每项一行，下方会自动填入'
+                '智能识别：输入或粘贴姓名、职位、电话和邮箱\n支持用换行或逗号分隔，将自动填入下方'
               }
-              className="min-h-40 resize-none bg-white text-base leading-7"
+              className="min-h-48 resize-none rounded-2xl border-2 border-[#afc0e2] bg-[#f4f7ff] px-5 py-4 text-base leading-7 shadow-[0_10px_28px_rgba(23,66,143,0.08)]"
             />
           </div>
 
@@ -510,8 +475,7 @@ export default function Home() {
         <section className="preview-panel">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="eyebrow">Preview</p>
-              <h2 className="mt-1 text-xl font-semibold">{templateLabel}</h2>
+              <h2 className="text-xl font-semibold">{templateLabel}</h2>
             </div>
             <div className="flex items-center gap-2 text-xs text-[#697386]">
               <FileText className="size-4" />
