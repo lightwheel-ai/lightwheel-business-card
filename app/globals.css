@@ -67,7 +67,7 @@ select {
   box-shadow: 0 14px 40px rgb(20 40 72 / 6%);
 }
 .editor-panel {
-  padding: 26px;
+  padding: 20px;
 }
 .preview-panel {
   display: flex;
@@ -99,7 +99,7 @@ select {
   container-type: inline-size;
 }
 .card-english {
-  --card-ratio: 0.81295;
+  --card-ratio: 0.81034;
   font-family: 'PingFang SC', 'PingFang TC', sans-serif;
 }
 .card-chinese {
@@ -136,22 +136,32 @@ select {
   font-weight: 500;
 }
 .english-contact {
-  fill: #241c1a;
   font-family: 'PingFang SC', 'PingFang TC', sans-serif;
   font-size: 14.8641px;
   font-weight: 400;
 }
+.english-phone {
+  fill: #000;
+}
+.english-email {
+  fill: #241c1a;
+}
 .chinese-primary {
-  fill: #143e8d;
+  fill: #0e3480;
   font-family: 'IBM Plex Sans SC', sans-serif;
   font-size: 28.7562px;
   font-weight: 500;
 }
 .chinese-contact {
-  fill: #241c1a;
   font-family: 'IBM Plex Sans SC', sans-serif;
   font-size: 14.5px;
   font-weight: 400;
+}
+.chinese-phone {
+  fill: #231815;
+}
+.chinese-email {
+  fill: #221714;
 }
 .export-rack {
   position: fixed;
@@ -166,7 +176,12 @@ select {
 }
 @media (min-width: 1024px) {
   .workspace-grid {
-    min-height: calc(100svh - 4rem);
+    height: calc(100svh - 4.0625rem);
+    min-height: calc(100svh - 4.0625rem);
+  }
+  .editor-panel {
+    min-height: 0;
+    overflow-y: hidden;
   }
   .preview-item {
     width: min(100%, 460px, calc(80.893svh - 12.134rem));

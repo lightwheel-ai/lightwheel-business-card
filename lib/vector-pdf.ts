@@ -1,5 +1,5 @@
 import fontkit from '@pdf-lib/fontkit';
-import { PDFDocument, type PDFPage, rgb } from 'pdf-lib';
+import { cmyk, PDFDocument, type PDFPage } from 'pdf-lib';
 
 type Template = 'english' | 'chinese';
 type CardData = { name: string; title: string; phone: string; email: string };
@@ -34,8 +34,27 @@ type PathFace = {
 
 type PingFangPaths = { medium: PathFace; regular: PathFace };
 
-const blue = rgb(20 / 255, 62 / 255, 141 / 255);
-const nearBlack = rgb(36 / 255, 28 / 255, 26 / 255);
+const englishBlue = cmyk(1, 0.8984375, 0.1796875, 0);
+const englishPhone = cmyk(0, 0, 0, 1);
+const englishEmail = cmyk(0.78515625, 0.81640625, 0.83203125, 0.671875);
+const chineseBlue = cmyk(
+  1,
+  0.909391939640045,
+  0.207156479358673,
+  0.0699473544955254,
+);
+const chinesePhone = cmyk(
+  0.639917612075806,
+  0.692744314670563,
+  0.688105583190918,
+  0.788204789161682,
+);
+const chineseEmail = cmyk(
+  0.641779184341431,
+  0.693904042243958,
+  0.688349723815918,
+  0.794003188610077,
+);
 
 const ibmMediumUrl = new URL(
   '../app/fonts/IBMPlexSansSC-Medium.otf',
@@ -110,7 +129,7 @@ function drawFontkitText(
   x: number,
   baselineFromTop: number,
   fontSize: number,
-  color: ReturnType<typeof rgb>,
+  color: ReturnType<typeof cmyk>,
 ) {
   const run = font.layout(text || '—');
   const scale = fontSize / font.unitsPerEm;
@@ -138,7 +157,7 @@ function drawPathFaceText(
   x: number,
   baselineFromTop: number,
   fontSize: number,
-  color: ReturnType<typeof rgb>,
+  color: ReturnType<typeof cmyk>,
 ) {
   const scale = fontSize / face.unitsPerEm;
   let cursor = x;
@@ -180,37 +199,37 @@ export async function createVectorCardPdf({
       page,
       pingFang.medium,
       data.name,
-      61.561,
-      224.86,
-      21.0575,
-      blue,
+      22.560755,
+      88.478121,
+      8.50002,
+      englishBlue,
     );
     drawPathFaceText(
       page,
       pingFang.medium,
       data.title,
-      61.561,
-      249.624,
-      21.0575,
-      blue,
+      22.560755,
+      98.678121,
+      8.50002,
+      englishBlue,
     );
     drawPathFaceText(
       page,
       pingFang.regular,
       data.phone,
-      91.341,
-      309.528,
-      14.8641,
-      nearBlack,
+      34.581751,
+      122.654879,
+      6.00001,
+      englishPhone,
     );
     drawPathFaceText(
       page,
       pingFang.regular,
       data.email,
-      92,
-      345.089,
-      14.8641,
-      nearBlack,
+      34.882044,
+      137.009371,
+      6.00001,
+      englishEmail,
     );
   } else {
     const ibm = await loadIbmFonts();
@@ -218,37 +237,37 @@ export async function createVectorCardPdf({
       page,
       ibm.medium,
       data.name,
-      61.073,
-      206.815,
-      28.7562,
-      blue,
+      22.924303,
+      77.630152,
+      10.79394,
+      chineseBlue,
     );
     drawFontkitText(
       page,
       ibm.medium,
       data.title,
-      60.187,
-      258.162,
-      28.7562,
-      blue,
+      22.591295,
+      96.902613,
+      10.79394,
+      chineseBlue,
     );
     drawFontkitText(
       page,
       ibm.regular,
       data.phone,
-      92.131,
-      329.114,
-      14.5,
-      nearBlack,
+      34.582506,
+      123.535425,
+      5.44272,
+      chinesePhone,
     );
     drawFontkitText(
       page,
       ibm.regular,
       data.email,
-      93.306,
-      367.037,
-      14.5,
-      nearBlack,
+      35.022936,
+      137.7698,
+      5.44272,
+      chineseEmail,
     );
   }
 

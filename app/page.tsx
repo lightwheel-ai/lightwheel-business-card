@@ -43,13 +43,13 @@ const defaults: Record<Template, CardData> = {
     name: 'Ruiming Zhang',
     title: 'Marketing Director',
     phone: '+86 13800008888',
-    email: 'user@lightwheel.ai',
+    email: 'ruiming.zhang@lightwheel.ai',
   },
   chinese: {
     name: '张瑞明',
     title: '市场总监',
     phone: '13800008888',
-    email: 'user@lightwheel.ai',
+    email: 'ruiming.zhang@lightwheel.ai',
   },
 };
 
@@ -77,7 +77,9 @@ function BusinessCard({
       <svg
         className="card-overlay"
         viewBox={
-          template === 'english' ? '0 0 671.445 825.939' : '0 0 709.87 877.537'
+          template === 'english'
+            ? '5.669 5.669 660.107 814.601'
+            : '0 0 709.87 877.537'
         }
         preserveAspectRatio="none"
       >
@@ -106,7 +108,7 @@ function BusinessCard({
               {data.title || '—'}
             </text>
             <text
-              className="english-contact"
+              className="english-contact english-phone"
               x="91.341"
               y="309.528"
               fill="#241c1a"
@@ -117,7 +119,7 @@ function BusinessCard({
               {data.phone || '—'}
             </text>
             <text
-              className="english-contact"
+              className="english-contact english-email"
               x="92.0"
               y="345.089"
               fill="#241c1a"
@@ -134,7 +136,7 @@ function BusinessCard({
               className="chinese-primary"
               x="61.073"
               y="206.815"
-              fill="#143e8d"
+              fill="#0e3480"
               fontFamily="IBM Plex Sans SC, sans-serif"
               fontSize="28.7562"
               fontWeight="500"
@@ -145,7 +147,7 @@ function BusinessCard({
               className="chinese-primary"
               x="60.187"
               y="258.162"
-              fill="#143e8d"
+              fill="#0e3480"
               fontFamily="IBM Plex Sans SC, sans-serif"
               fontSize="28.7562"
               fontWeight="500"
@@ -153,7 +155,7 @@ function BusinessCard({
               {data.title || '—'}
             </text>
             <text
-              className="chinese-contact"
+              className="chinese-contact chinese-phone"
               x="92.131"
               y="329.114"
               fill="#241c1a"
@@ -164,7 +166,7 @@ function BusinessCard({
               {data.phone || '—'}
             </text>
             <text
-              className="chinese-contact"
+              className="chinese-contact chinese-email"
               x="93.306"
               y="367.037"
               fill="#241c1a"
@@ -427,7 +429,7 @@ export default function Home() {
 
       <div className="workspace-grid mx-auto grid max-w-[1480px] gap-5 px-5 py-5 lg:grid-cols-2 lg:px-8">
         <section className="editor-panel">
-          <div className="mb-6">
+          <div className="mb-4">
             <h1 className="text-2xl font-semibold tracking-[-0.025em]">
               自动生成名片
             </h1>
@@ -473,7 +475,7 @@ export default function Home() {
             </NativeSelect>
           </div>
 
-          <div className="mt-5">
+          <div className="mt-4">
             <Textarea
               aria-label="智能识别"
               value={bulk}
@@ -481,13 +483,13 @@ export default function Home() {
               placeholder={
                 '智能识别：输入或粘贴姓名、职位、电话和邮箱\n支持用换行或逗号分隔，将自动填入下方'
               }
-              className="min-h-48 resize-none rounded-2xl border-2 border-[#afc0e2] bg-[#f4f7ff] px-5 py-4 text-base leading-7 shadow-[0_10px_28px_rgba(23,66,143,0.08)]"
+              className="min-h-36 resize-none rounded-2xl border-2 border-[#afc0e2] bg-[#f4f7ff] px-5 py-4 text-base leading-7 shadow-[0_10px_28px_rgba(23,66,143,0.08)]"
             />
           </div>
 
-          <div className="my-5 h-px bg-[#e5e9f0]" />
+          <div className="my-4 h-px bg-[#e5e9f0]" />
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             {(
               [
                 ['name', '名字'],
@@ -508,7 +510,7 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-3">
+          <div className="mt-4 grid grid-cols-2 gap-3">
             <Button
               type="button"
               className="h-11 bg-[#17428f] text-white"
@@ -554,7 +556,7 @@ export default function Home() {
               生成失败，请刷新页面后重试。
             </p>
           )}
-          <p className="mt-3 text-center text-xs leading-5 text-[#697386]">
+          <p className="mt-2 text-center text-xs leading-5 text-[#697386]">
             PDF 全部转曲且不含位图；PNG 为 3.2 倍高清输出
             <br />
             下载时会弹出保存位置选择（不支持时按浏览器设置下载）
