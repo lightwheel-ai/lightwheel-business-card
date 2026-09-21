@@ -71,7 +71,7 @@ function BusinessCard({
       <img
         aria-hidden="true"
         className="template-sheet"
-        src={assetUrl(`/templates/${template}-template.svg?v=clean-template-1`)}
+        src={assetUrl(`/templates/${template}-template.svg?v=exact-logo-2`)}
         alt=""
       />
       <svg

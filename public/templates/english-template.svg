@@ -1562,35 +1562,35 @@
 <path fill-rule="nonzero" fill="rgb(5.633545%, 5.981445%, 5.700684%)" fill-opacity="1" d="M 483.113281 618.328125 L 488.160156 618.328125 L 488.160156 587.621094 L 483.113281 587.621094 Z M 483.113281 618.328125 "/>
 <path fill="none" stroke-width="6.19" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(77.441406%, 77.580261%, 77.755737%)" stroke-opacity="1" stroke-miterlimit="10" d="M 58.13395 4131.938667 L 6658.897974 4131.938667 " transform="matrix(0.0999174, 0, 0, -0.0999174, 0.000000000000003553, 825.567457)"/>
 <defs>
-<linearGradient id="lw-logo-blue" x1="0.264238" y1="50.691" x2="66.9101" y2="13.3512" gradientUnits="userSpaceOnUse">
-<stop offset="0.23" stop-color="#000000"/>
-<stop offset="0.475962" stop-color="#315d9f"/>
-<stop offset="0.71" stop-color="#79aaf7"/>
-<stop offset="0.88" stop-color="#d0dff0"/>
+<linearGradient id="lw-exact-blue" x1="-1.18185" y1="200.133" x2="301.924" y2="30.3109" gradientUnits="userSpaceOnUse">
+<stop offset="0.23"/>
+<stop offset="0.475962" stop-color="#315D9F"/>
+<stop offset="0.71" stop-color="#79AAF7"/>
+<stop offset="0.88" stop-color="#D0DFF0"/>
 </linearGradient>
-<linearGradient id="lw-logo-purple" x1="67.1407" y1="12.0211" x2="67.1407" y2="90.0057" gradientUnits="userSpaceOnUse">
-<stop offset="0.23" stop-color="#1e1e1e"/>
+<linearGradient id="lw-exact-purple" x1="303.004" y1="24.2577" x2="303.004" y2="378.933" gradientUnits="userSpaceOnUse">
+<stop offset="0.23" stop-color="#1E1E1E"/>
 <stop offset="0.466346" stop-color="#564295"/>
-<stop offset="0.71" stop-color="#b88de7"/>
-<stop offset="0.908654" stop-color="#d0dff0"/>
+<stop offset="0.71" stop-color="#B88DE7"/>
+<stop offset="0.908654" stop-color="#D0DFF0"/>
 </linearGradient>
-<linearGradient id="lw-logo-violet" x1="67.15" y1="89.4783" x2="0.619633" y2="50.9657" gradientUnits="userSpaceOnUse">
-<stop offset="0.23" stop-color="#000000"/>
-<stop offset="0.408654" stop-color="#3b328e"/>
-<stop offset="0.71" stop-color="#9086e6"/>
-<stop offset="0.889423" stop-color="#d0dff0"/>
+<linearGradient id="lw-exact-violet" x1="303.031" y1="376.538" x2="0.450053" y2="201.382" gradientUnits="userSpaceOnUse">
+<stop offset="0.23"/>
+<stop offset="0.408654" stop-color="#3B328E"/>
+<stop offset="0.71" stop-color="#9086E6"/>
+<stop offset="0.889423" stop-color="#D0DFF0"/>
 </linearGradient>
-<radialGradient id="lw-logo-light" cx="0" cy="0" r="1" gradientTransform="matrix(-11.9766 -42.8193 -42.4772 12.015 58.6642 28.0027)" gradientUnits="userSpaceOnUse">
-<stop stop-color="#ffffff"/>
-<stop offset="1" stop-color="#d0dff0"/>
+<radialGradient id="lw-exact-light" cx="0" cy="0" r="1" gradientTransform="matrix(-54.4699 -194.743 -193.187 54.6445 264.437 96.9407)" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFFFFF"/>
+<stop offset="1" stop-color="#D0DFF0"/>
 </radialGradient>
-<g id="lw-logo-symbol">
-<path d="M44.9605 6.68652C53.0533 6.68652 60.7429 8.83808 67.2766 12.6258L44.9605 51.0995H0.5241C0.5241 26.5907 20.4221 6.68652 44.9605 6.68652Z" fill="url(#lw-logo-blue)"/>
-<path d="M83.4085 73.4204C79.3601 80.4963 73.5445 85.7465 67.0076 89.5652L44.9302 51.0321L67.0076 12.5034C88.2524 24.8956 95.7023 52.0055 83.4085 73.4204Z" fill="url(#lw-logo-purple)"/>
-<path d="M6.45978 73.2682C2.41377 66.2735 0.520682 58.6495 0.520682 51.0996H44.9526L67.1401 89.4563C45.9079 101.669 18.7463 94.4376 6.45978 73.2682Z" fill="url(#lw-logo-violet)"/>
-<path d="M56.678 86.3668L49.4332 73.7657C43.9256 64.1382 33.6867 58.228 22.6346 58.228H7.88621C3.82023 58.228 0.520682 55.1896 0.520682 51.1008C0.520682 47.0119 3.82023 43.3965 7.88621 43.3965H22.6346C33.6867 43.3965 43.8886 37.4491 49.4332 27.8589L56.641 15.2577C58.4153 12.1725 62.1311 10.6196 65.4578 11.7347C70.0413 13.2959 71.7961 18.4545 69.5413 22.3947L62.1856 35.2188C56.678 44.8462 56.678 56.7039 62.1856 66.3314L69.5413 79.1555C71.833 83.1329 70.3778 88.6063 65.7943 90.1303C62.4306 91.2826 58.4153 89.3777 56.641 86.2925L56.678 86.3668Z" fill="url(#lw-logo-light)"/>
-</g>
+<symbol id="lw-exact-symbol" viewBox="0 0 404.5 413" preserveAspectRatio="none">
+<path d="M202.097 0C238.904 0 273.876 9.78528 303.591 27.0119L202.097 201.991H0C0 90.5243 90.4963 0 202.097 0Z" fill="url(#lw-exact-blue)"/>
+<path d="M376.99 303.503C358.578 335.684 332.129 359.562 302.399 376.929L201.99 201.68L302.399 26.4514C399.02 82.8113 432.902 206.108 376.99 303.503Z" fill="url(#lw-exact-purple)"/>
+<path d="M27.0111 302.814C8.60979 271.002 0 236.328 0 201.991H202.077L302.986 376.437C206.421 431.983 82.8903 399.093 27.0111 302.814Z" fill="url(#lw-exact-violet)"/>
+<path d="M255.404 362.381L222.455 305.071C197.406 261.285 150.84 234.405 100.575 234.405H33.4985C15.0064 234.405 0 220.587 0 201.991C0 183.395 15.0064 166.952 33.4985 166.952H100.575C150.84 166.952 197.238 139.903 222.455 96.2864L255.236 38.9762C263.305 24.9446 280.205 17.8818 295.335 22.9535C316.181 30.0539 324.161 53.5151 313.907 71.4351L280.453 129.76C255.404 173.545 255.404 227.474 280.453 271.26L313.907 329.584C324.33 347.673 317.711 372.566 296.865 379.498C281.567 384.738 263.305 376.075 255.236 362.043L255.404 362.381Z" fill="url(#lw-exact-light)"/>
+</symbol>
 </defs>
-<use href="#lw-logo-symbol" transform="translate(60.65 89.35) scale(.663 .695) translate(-.5241 -6.68652)"/>
-<use href="#lw-logo-symbol" transform="translate(176.6 564.63) scale(.764 .803) translate(-.5241 -6.68652)"/>
+<use href="#lw-exact-symbol" x="61.515" y="94.43" width="56.875" height="56.875"/>
+<use href="#lw-exact-symbol" x="177.226" y="570.035" width="66.84" height="66.84"/>
 </svg>
