@@ -1,7 +1,7 @@
 'use client';
 /* oxlint-disable next/no-img-element -- original-resolution assets are captured directly into the exported PDF */
 
-import { type Ref, useMemo, useRef, useState } from 'react';
+import { type Ref, useEffect, useMemo, useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { Check, Download, FileText, LoaderCircle } from 'lucide-react';
 
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
 import { parseCardData } from '@/lib/card-parser';
+import { loadPingFangPaths, type PathFace } from '@/lib/pingfang';
 
 type Template = 'english' | 'chinese';
 type CardData = { name: string; title: string; phone: string; email: string };
@@ -53,6 +54,26 @@ const defaults: Record<Template, CardData> = {
   },
 };
 
+function ChineseEmail({ text }: { text: string }) {
+  const [face, setFace] = useState<PathFace>();
+  useEffect(() => {
+    let active = true;
+    loadPingFangPaths(assetUrl).then((fonts) => { if (active) setFace(fonts.regular); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+  if (!face) return <text x="35.0229" y="136.7699" fontSize="5.4427" fontFamily="PingFang SC" fill="#221714" data-font-ready="false">{text}</text>;
+  const scale = 5.4427 / face.unitsPerEm;
+  let cursor = 0;
+  return <g fill="#221714" data-font-ready="true" aria-label={text} transform={`translate(35.0229 136.7699) scale(${scale})`}>
+    {Array.from(text || '—').map((char, index) => {
+      const glyph = face.glyphs[char] ?? face.glyphs['?'];
+      const x = cursor;
+      cursor += glyph?.advance ?? face.unitsPerEm * 0.6;
+      return <path key={index} d={glyph?.path || ''} transform={`translate(${x} 0)`} />;
+    })}
+  </g>;
+}
+
 function BusinessCard({
   template,
   data,
@@ -71,7 +92,7 @@ function BusinessCard({
       <img
         aria-hidden="true"
         className="template-sheet"
-        src={assetUrl(`/templates/${template}-template.svg?v=exact-logo-3`)}
+        src={assetUrl(`/templates/${template}-template.svg?v=chinese-20260921`)}
         alt=""
       />
       <svg
@@ -79,7 +100,7 @@ function BusinessCard({
         viewBox={
           template === 'english'
             ? '5.669 5.669 660.107 814.601'
-            : '0 0 709.87 877.537'
+            : '0 0 266.457 329.39'
         }
         preserveAspectRatio="none"
       >
@@ -134,48 +155,38 @@ function BusinessCard({
           <>
             <text
               className="chinese-primary"
-              x="61.073"
-              y="206.815"
+              x="22.9243"
+              y="77.6303"
               fill="#0e3480"
               fontFamily="IBM Plex Sans SC, sans-serif"
-              fontSize="28.7562"
+              fontSize="10.7939"
               fontWeight="500"
             >
               {data.name || '—'}
             </text>
             <text
               className="chinese-primary"
-              x="60.187"
-              y="258.162"
+              x="22.5913"
+              y="96.9027"
               fill="#0e3480"
               fontFamily="IBM Plex Sans SC, sans-serif"
-              fontSize="28.7562"
+              fontSize="10.7939"
               fontWeight="500"
             >
               {data.title || '—'}
             </text>
             <text
               className="chinese-contact chinese-phone"
-              x="92.131"
-              y="329.114"
+              x="34.5825"
+              y="123.5356"
               fill="#241c1a"
               fontFamily="IBM Plex Sans SC, sans-serif"
-              fontSize="14.5"
+              fontSize="5.4427"
               fontWeight="400"
             >
               {data.phone || '—'}
             </text>
-            <text
-              className="chinese-contact chinese-email"
-              x="93.306"
-              y="367.037"
-              fill="#241c1a"
-              fontFamily="IBM Plex Sans SC, sans-serif"
-              fontSize="14.5"
-              fontWeight="400"
-            >
-              {data.email || '—'}
-            </text>
+            <ChineseEmail text={data.email} />
           </>
         )}
       </svg>
@@ -303,6 +314,13 @@ export default function Home() {
   async function renderCard() {
     if (!exportRef.current) throw new Error('Export card is not ready.');
     await document.fonts.ready;
+    if (template === 'chinese') {
+      await loadPingFangPaths(assetUrl);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      if (exportRef.current.querySelector('[data-font-ready="false"]')) {
+        throw new Error('邮箱字体尚未加载完成，请稍后重试。');
+      }
+    }
     return toPng(exportRef.current, {
       cacheBust: true,
       pixelRatio: 3.2,

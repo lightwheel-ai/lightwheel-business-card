@@ -103,7 +103,7 @@ select {
   font-family: 'PingFang SC', 'PingFang TC', sans-serif;
 }
 .card-chinese {
-  --card-ratio: 0.80893;
+  --card-ratio: 266.457 / 329.39;
   font-family: 'IBM Plex Sans SC', sans-serif;
 }
 .template-sheet {
@@ -149,12 +149,12 @@ select {
 .chinese-primary {
   fill: #0e3480;
   font-family: 'IBM Plex Sans SC', sans-serif;
-  font-size: 28.7562px;
+  font-size: 10.7939px;
   font-weight: 500;
 }
 .chinese-contact {
   font-family: 'IBM Plex Sans SC', sans-serif;
-  font-size: 14.5px;
+  font-size: 5.4427px;
   font-weight: 400;
 }
 .chinese-phone {

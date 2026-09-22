@@ -1,5 +1,6 @@
 import fontkit from '@pdf-lib/fontkit';
 import { cmyk, PDFDocument, type PDFPage } from 'pdf-lib';
+import { loadPingFangPaths, type PathFace } from './pingfang';
 
 type Template = 'english' | 'chinese';
 type CardData = { name: string; title: string; phone: string; email: string };
@@ -27,12 +28,6 @@ type FontkitFont = {
   };
 };
 
-type PathFace = {
-  unitsPerEm: number;
-  glyphs: Record<string, { path: string; advance: number }>;
-};
-
-type PingFangPaths = { medium: PathFace; regular: PathFace };
 
 const englishBlue = cmyk(1, 0.8984375, 0.1796875, 0);
 const englishPhone = cmyk(0, 0, 0, 1);
@@ -68,7 +63,6 @@ const ibmRegularUrl = new URL(
 let ibmFontsPromise:
   | Promise<{ medium: FontkitFont; regular: FontkitFont }>
   | undefined;
-let pingFangPromise: Promise<PingFangPaths> | undefined;
 
 function rounded(value: number) {
   return Number(value.toFixed(3)).toString();
@@ -112,15 +106,6 @@ async function loadIbmFonts() {
   return ibmFontsPromise;
 }
 
-async function loadPingFangPaths(assetUrl: (path: string) => string) {
-  pingFangPromise ||= fetch(assetUrl('/templates/pingfang-paths.json')).then(
-    async (response) => {
-      if (!response.ok) throw new Error('Unable to load PingFang outlines.');
-      return (await response.json()) as PingFangPaths;
-    },
-  );
-  return pingFangPromise;
-}
 
 function drawFontkitText(
   page: PDFPage,
@@ -186,12 +171,14 @@ export async function createVectorCardPdf({
   assetUrl: (path: string) => string;
 }) {
   const templateResponse = await fetch(
-    assetUrl(`/templates/${template}-template-outlined.pdf`),
+    assetUrl(`/templates/${template}-template-outlined.pdf?v=chinese-20260921`),
   );
   if (!templateResponse.ok) throw new Error('Unable to load vector template.');
 
   const document = await PDFDocument.load(await templateResponse.arrayBuffer());
   const page = document.getPages()[0];
+  // Preserve the source's 94 mm print width rather than pdfwrite's rounded box.
+  if (template === 'chinese') page.setSize((94 / 25.4) * 72, 329.392);
 
   if (template === 'english') {
     const pingFang = await loadPingFangPaths(assetUrl);
@@ -260,13 +247,14 @@ export async function createVectorCardPdf({
       5.44272,
       chinesePhone,
     );
-    drawFontkitText(
+    const pingFang = await loadPingFangPaths(assetUrl);
+    drawPathFaceText(
       page,
-      ibm.regular,
+      pingFang.regular,
       data.email,
-      35.022936,
-      137.7698,
-      5.44272,
+      35.0229,
+      136.7699,
+      5.4427,
       chineseEmail,
     );
   }
