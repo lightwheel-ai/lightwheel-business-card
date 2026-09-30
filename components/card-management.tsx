@@ -62,8 +62,9 @@ export const CardManagement = forwardRef<
     current: Fields;
     template: Template;
     onUse: (data: Fields, template: Template) => void;
+    onNew: () => void;
   }
->(function CardManagement({ current, template, onUse }, ref) {
+>(function CardManagement({ current, template, onUse, onNew }, ref) {
   const [login, setLogin] = useState(false);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -489,12 +490,9 @@ export const CardManagement = forwardRef<
                 variant="outline"
                 onClick={() => {
                   selected.current = null;
-                  onUse(
-                    { name: '', title: '', phone: '', email: '' },
-                    template,
-                  );
+                  onNew();
                   window.location.hash = '';
-                  setMessage('已新建空白名片。');
+                  setMessage('已新建名片，请替换示例信息。');
                 }}
               >
                 新建名片

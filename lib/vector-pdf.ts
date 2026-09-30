@@ -116,7 +116,8 @@ function drawFontkitText(
   fontSize: number,
   color: ReturnType<typeof cmyk>,
 ) {
-  const run = font.layout(text || '—');
+  if (!text) return;
+  const run = font.layout(text);
   const scale = fontSize / font.unitsPerEm;
   let cursor = x;
 
@@ -147,7 +148,7 @@ function drawPathFaceText(
   const scale = fontSize / face.unitsPerEm;
   let cursor = x;
 
-  for (const character of text || '—') {
+  for (const character of text) {
     const glyph = face.glyphs[character] ?? face.glyphs['?'];
     if (glyph?.path) {
       page.drawSvgPath(glyph.path, {

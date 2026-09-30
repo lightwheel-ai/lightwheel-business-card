@@ -66,7 +66,7 @@ function ChineseEmail({ text }: { text: string }) {
   const scale = 5.4427 / face.unitsPerEm;
   let cursor = 0;
   return <g fill="#221714" data-font-ready="true" aria-label={text} transform={`translate(35.0229 136.7699) scale(${scale})`}>
-    {Array.from(text || '—').map((char, index) => {
+    {Array.from(text).map((char, index) => {
       const glyph = face.glyphs[char] ?? face.glyphs['?'];
       const x = cursor;
       cursor += glyph?.advance ?? face.unitsPerEm * 0.6;
@@ -116,7 +116,7 @@ function BusinessCard({
               fontSize="21.0575"
               fontWeight="500"
             >
-              {data.name || '—'}
+              {data.name}
             </text>
             <text
               className="english-primary"
@@ -127,7 +127,7 @@ function BusinessCard({
               fontSize="21.0575"
               fontWeight="500"
             >
-              {data.title || '—'}
+              {data.title}
             </text>
             <text
               className="english-contact english-phone"
@@ -138,7 +138,7 @@ function BusinessCard({
               fontSize="14.8641"
               fontWeight="400"
             >
-              {data.phone || '—'}
+              {data.phone}
             </text>
             <text
               className="english-contact english-email"
@@ -149,7 +149,7 @@ function BusinessCard({
               fontSize="14.8641"
               fontWeight="400"
             >
-              {data.email || '—'}
+              {data.email}
             </text>
           </>
         ) : (
@@ -163,7 +163,7 @@ function BusinessCard({
               fontSize="10.7939"
               fontWeight="500"
             >
-              {data.name || '—'}
+              {data.name}
             </text>
             <text
               className="chinese-primary"
@@ -174,7 +174,7 @@ function BusinessCard({
               fontSize="10.7939"
               fontWeight="500"
             >
-              {data.title || '—'}
+              {data.title}
             </text>
             <text
               className="chinese-contact chinese-phone"
@@ -185,7 +185,7 @@ function BusinessCard({
               fontSize="5.4427"
               fontWeight="400"
             >
-              {data.phone || '—'}
+              {data.phone}
             </text>
             <ChineseEmail text={data.email} />
           </>
@@ -241,6 +241,12 @@ export default function Home() {
     translationAbortRef.current = controller;
 
     setTemplate(nextTemplate);
+    // Copy this person's contacts as well, never mix with the other template's example.
+    setValues(current => ({...current, [nextTemplate]: {...sourceData}}));
+    if (!sourceData.name.trim() && !sourceData.title.trim()) {
+      setTranslationState('idle');
+      return;
+    }
     setTranslationState('working');
 
     try {
@@ -270,11 +276,11 @@ export default function Home() {
           name:
             nameResult.status === 'fulfilled'
               ? nameResult.value
-              : current[nextTemplate].name,
+              : sourceData.name,
           title:
             titleResult.status === 'fulfilled'
               ? titleResult.value
-              : current[nextTemplate].title,
+              : sourceData.title,
         },
       }));
 
@@ -445,7 +451,13 @@ export default function Home() {
               Business Card
             </span>
           </div>
-          <CardManagement ref={managementRef} current={data} template={template} onUse={(record, nextTemplate) => {
+          <CardManagement ref={managementRef} current={data} template={template} onNew={() => {
+            translationRequestRef.current += 1;
+            translationAbortRef.current?.abort();
+            setTranslationState('idle');
+            setBulk('');
+            setValues({chinese: {...defaults.chinese}, english: {...defaults.english}});
+          }} onUse={(record, nextTemplate) => {
             translationRequestRef.current += 1;
             translationAbortRef.current?.abort();
             setTranslationState('idle');
@@ -532,6 +544,7 @@ export default function Home() {
                 <Input
                   id={field}
                   value={data[field]}
+                  placeholder={defaults[template][field]}
                   onChange={(event) => update(field, event.target.value)}
                   className="h-10 bg-white"
                 />
