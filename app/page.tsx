@@ -15,6 +15,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { parseCardData } from '@/lib/card-parser';
 import { loadPingFangPaths, type PathFace } from '@/lib/pingfang';
+import { CardManagement, type ManagementHandle } from '@/components/card-management';
 
 type Template = 'english' | 'chinese';
 type CardData = { name: string; title: string; phone: string; email: string };
@@ -202,6 +203,7 @@ export default function Home() {
   const [translationState, setTranslationState] =
     useState<TranslationState>('idle');
   const exportRef = useRef<HTMLDivElement>(null);
+  const managementRef = useRef<ManagementHandle>(null);
   const translationRequestRef = useRef(0);
   const translationAbortRef = useRef<AbortController | null>(null);
   const data = values[template];
@@ -384,6 +386,7 @@ export default function Home() {
     if (!exportRef.current || isExporting) return;
 
     setExportState('pdf-working');
+    const recordDownload = managementRef.current?.prepareDownload();
     try {
       const fileName = `${safeFileName()}-${template}-business-card.pdf`;
       const fileHandle = await selectSaveLocation(
@@ -395,6 +398,7 @@ export default function Home() {
       const { createVectorCardPdf } = await import('@/lib/vector-pdf');
       const pdf = await createVectorCardPdf({ template, data, assetUrl });
       await saveBlob(pdf, fileName, fileHandle);
+      await recordDownload?.(data, template, 'pdf');
       setExportState('pdf-done');
       window.setTimeout(() => setExportState('idle'), 2200);
     } catch (error) {
@@ -406,6 +410,7 @@ export default function Home() {
     if (!exportRef.current || isExporting) return;
 
     setExportState('png-working');
+    const recordDownload = managementRef.current?.prepareDownload();
     try {
       const fileName = `${safeFileName()}-${template}-business-card.png`;
       const fileHandle = await selectSaveLocation(
@@ -417,6 +422,7 @@ export default function Home() {
       const image = await renderCard();
       const imageBlob = await fetch(image).then((response) => response.blob());
       await saveBlob(imageBlob, fileName, fileHandle);
+      await recordDownload?.(data, template, 'png');
       setExportState('png-done');
       window.setTimeout(() => setExportState('idle'), 2200);
     } catch (error) {
@@ -439,9 +445,14 @@ export default function Home() {
               Business Card
             </span>
           </div>
-          <span className="rounded-full bg-[#eef3ff] px-3 py-1.5 text-xs font-medium text-[#17428f]">
-            实时预览
-          </span>
+          <CardManagement ref={managementRef} current={data} template={template} onUse={(record, nextTemplate) => {
+            translationRequestRef.current += 1;
+            translationAbortRef.current?.abort();
+            setTranslationState('idle');
+            setBulk('');
+            setTemplate(nextTemplate);
+            setValues(currentValues => ({...currentValues, [nextTemplate]: {name:record.name,title:record.title,phone:record.phone,email:record.email}}));
+          }} />
         </div>
       </header>
 
