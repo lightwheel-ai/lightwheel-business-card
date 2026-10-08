@@ -59,9 +59,10 @@ export function CardImport({
               fields.email.length > 254
             )
               throw new Error('识别出的字段过长，请检查名片排版或表格内容。');
-            const { error } = await supabase.rpc('card_save', {
+            const { preview, ...values } = fields;
+            const { data: record, error } = await supabase.rpc('card_save', {
               fields: {
-                ...fields,
+                ...values,
                 source: fields.source.slice(0, 500),
                 template,
                 needs_review: true,
@@ -76,6 +77,18 @@ export function CardImport({
               );
             saved++;
             update(i, { saved });
+            if (preview) {
+              const { error: uploadError } = await supabase.storage
+                .from('card-sources')
+                .upload(`${record.id}/source.png`, preview, {
+                  contentType: 'image/png',
+                  upsert: false,
+                });
+              if (uploadError)
+                throw new Error(
+                  '识别结果已保存，但原图上传失败，请勿重复导入；可在来源预览中补传原图。',
+                );
+            }
           }
           update(i, {
             status: abort.signal.aborted
@@ -116,22 +129,16 @@ export function CardImport({
         hidden={!visible}
         className="space-y-3 rounded-xl border bg-white p-4"
       >
-        <h2 className="text-lg font-semibold">导入名片</h2>
-        <p className="text-sm text-slate-600">
-          单张图片或批量图片、PDF、XLSX、CSV。PDF
-          每页一张名片；表格需包含姓名、职位、电话、邮箱四列。每批最多 30
-          个文件，单个文件最多 20 MB。
-        </p>
-        <p className="text-sm text-slate-600">
-          文件在本机识别，原文件不上传；首次识别需联网下载语言包。识别结果保存到团队记录后，请核对姓名及联系方式。刷新或关闭页面会停止未完成的导入。
-        </p>
+        <Button disabled={running} onClick={() => input.current?.click()}>
+          {running ? '正在导入…' : '导入名片'}
+        </Button>
         <input
           ref={input}
           type="file"
           aria-label="选择名片图片、PDF 或表格"
           multiple
           accept=".png,.jpg,.jpeg,.webp,.bmp,.pdf,.xlsx,.csv,.tsv"
-          className="block max-w-full text-sm"
+          className="hidden"
           disabled={running}
           onChange={(e) => {
             const files = Array.from(e.target.files ?? []);

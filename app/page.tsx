@@ -451,13 +451,7 @@ export default function Home() {
               Business Card
             </span>
           </div>
-          <CardManagement ref={managementRef} current={data} template={template} onNew={() => {
-            translationRequestRef.current += 1;
-            translationAbortRef.current?.abort();
-            setTranslationState('idle');
-            setBulk('');
-            setValues({chinese: {...defaults.chinese}, english: {...defaults.english}});
-          }} onUse={(record, nextTemplate) => {
+          <CardManagement ref={managementRef} template={template} onUse={(record, nextTemplate) => {
             translationRequestRef.current += 1;
             translationAbortRef.current?.abort();
             setTranslationState('idle');

@@ -28,8 +28,8 @@ document.querySelector('#ocr')!.addEventListener('click', async () => {
   try {
     const canvas = document.createElement('canvas'); canvas.width = 1000; canvas.height = 500;
     const ctx = canvas.getContext('2d')!; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 1000, 500); ctx.fillStyle = '#111'; ctx.font = '40px Arial';
-    ['Test Person', 'Product Director', '+86 13800008888', 'user@example.com'].forEach((text, i) => ctx.fillText(text, 60, 100 + i * 85));
+    ['4) Lightwheel', 'Test Person', 'Product Director', '+86 13800008888', 'user@example.com'].forEach((text, i) => ctx.fillText(text, 60, 70 + i * 85));
     const blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
-    for await (const card of importer.read(new File([blob], 'test.png'))) { assert(card.email === 'user@example.com', '图片邮箱识别失败'); result.textContent = `PASS 图片识别\n${JSON.stringify(card)}`; }
+    for await (const card of importer.read(new File([blob], 'test.png'))) { assert(card.email === 'user@example.com', '图片邮箱识别失败'); assert(card.name === 'Test Person' && card.title === 'Product Director', '品牌干扰姓名或职位'); assert(card.preview instanceof Blob && card.preview.size > 0, '来源预览未生成'); result.textContent = `PASS 图片识别（品牌排除 / 姓名 / 职位 / 原图预览）\n${JSON.stringify(card)}`; }
   } catch (e) { result.textContent = `FAIL ${String(e)}`; } finally { await importer.close(); }
 });

@@ -59,12 +59,10 @@ export type ManagementHandle = {
 export const CardManagement = forwardRef<
   ManagementHandle,
   {
-    current: Fields;
     template: Template;
     onUse: (data: Fields, template: Template) => void;
-    onNew: () => void;
   }
->(function CardManagement({ current, template, onUse, onNew }, ref) {
+>(function CardManagement({ template, onUse }, ref) {
   const [login, setLogin] = useState(false);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -86,6 +84,38 @@ export const CardManagement = forwardRef<
   const identity = useRef<string | null>(null);
   const [revision, setRevision] = useState(0);
   const [editing, setEditing] = useState<RecordRow | null>(null);
+  const [deleting, setDeleting] = useState<RecordRow | null>(null);
+  const [undo, setUndo] = useState<string | null>(null);
+  const [source, setSource] = useState<RecordRow | null>(null);
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [sourceStatus, setSourceStatus] = useState('');
+  useEffect(() => {
+    let live = true;
+    setSourceUrl('');
+    if (!source || !access.manager) return;
+    setSourceStatus('正在加载原图…');
+    supabase.storage
+      .from('card-sources')
+      .createSignedUrl(`${source.id}/source.png`, 60)
+      .then(({ data, error }) => {
+        if (!live) return;
+        setSourceUrl(data?.signedUrl ?? '');
+        setSourceStatus(
+          error ? '这条记录尚未保存原图，可以补传图片后核对。' : '',
+        );
+      });
+    return () => {
+      live = false;
+    };
+  }, [source, access.manager]);
+  useEffect(() => {
+    if (!access.manager) {
+      setSource(null);
+      setDeleting(null);
+      setEditing(null);
+      setUndo(null);
+    }
+  }, [access.manager]);
 
   async function refreshIdentity() {
     const epoch = ++generation.current;
@@ -100,6 +130,9 @@ export const CardManagement = forwardRef<
       setRequests([]);
       setHistory([]);
       setEditing(null);
+      setSource(null);
+      setDeleting(null);
+      setUndo(null);
       selected.current = null;
       setPage(0);
     }
@@ -184,12 +217,19 @@ export const CardManagement = forwardRef<
       setBusy(false);
     }
   }
-  async function save(fields: Fields, chosenTemplate: Template, event: string, row = selected.current, actor = identity.current) {
+  async function save(
+    fields: Fields,
+    chosenTemplate: Template,
+    event: string,
+    row = selected.current,
+    actor = identity.current,
+  ) {
     if (pendingSave.current)
       throw new Error('上一条记录仍在保存，请稍后重试。');
     pendingSave.current = true;
     try {
-      if (!actor || actor !== identity.current) throw new Error('登录账号已变化，请重新保存。');
+      if (!actor || actor !== identity.current)
+        throw new Error('登录账号已变化，请重新保存。');
       const { data: role, error: roleError } =
         await supabase.rpc('card_access');
       if (roleError || !role?.manager)
@@ -220,20 +260,22 @@ export const CardManagement = forwardRef<
       const actor = identity.current;
       const allowed = !!user && access.manager;
       return async (fields, chosenTemplate, kind) => {
-      // Guests never persist card details. Database still authorizes every manager write.
-      if (!allowed) return;
-      if (pendingSave.current) {
-        setMessage('文件已下载，但另一条记录仍在保存，请稍后手动保存。');
-        return;
-      }
-      try {
-        await save(fields, chosenTemplate, kind, row, actor);
-        setMessage('下载记录已保存。');
-      } catch (e) {
-        setMessage(
-          `文件已下载，历史记录未保存：${e instanceof Error ? e.message : '请重试'}`,
-        );
-      }
+        // Guests never persist card details. Database still authorizes every manager write.
+        if (!allowed) return;
+        if (pendingSave.current) {
+          setMessage(
+            '文件已下载，但另一条记录仍在保存，请稍后重新下载以保存记录。',
+          );
+          return;
+        }
+        try {
+          await save(fields, chosenTemplate, kind, row, actor);
+          setMessage('下载记录已保存。');
+        } catch (e) {
+          setMessage(
+            `文件已下载，历史记录未保存：${e instanceof Error ? e.message : '请重试'}`,
+          );
+        }
       };
     },
   }));
@@ -268,18 +310,6 @@ export const CardManagement = forwardRef<
             >
               名片记录
             </Button>
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() =>
-                void action(async () => {
-                  await save(current, template, 'edit');
-                  setMessage('当前名片已保存。');
-                })
-              }
-            >
-              保存记录
-            </Button>
           </>
         )}
         <Button variant="outline" onClick={() => setLogin(true)}>
@@ -298,6 +328,25 @@ export const CardManagement = forwardRef<
           className="fixed bottom-4 left-4 z-40 max-w-md rounded-xl border bg-white p-4 text-sm shadow-lg"
         >
           {message}
+          {undo && (
+            <button
+              className="ml-3 underline"
+              disabled={busy}
+              onClick={() =>
+                void action(async () => {
+                  const { error } = await supabase.rpc('card_restore', {
+                    record_id: undo,
+                  });
+                  if (error) throw new Error('恢复失败，请重试。');
+                  setUndo(null);
+                  setRevision((n) => n + 1);
+                  setMessage('记录已恢复。');
+                })
+              }
+            >
+              撤销删除
+            </button>
+          )}
           <button className="ml-4 underline" onClick={() => setMessage('')}>
             关闭
           </button>
@@ -486,26 +535,12 @@ export const CardManagement = forwardRef<
             </div>
           ) : (
             <>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  selected.current = null;
-                  onNew();
-                  window.location.hash = '';
-                  setMessage('已新建名片，请替换示例信息。');
-                }}
-              >
-                新建名片
-              </Button>
               <CardImport
                 template={template}
                 onSaved={() => setRevision((n) => n + 1)}
                 visible={true}
               />
               <div className="rounded-xl border bg-white p-4">
-                <p className="mb-4 text-sm">
-                  点击姓名载入制作页；历史版本可重新制作。普通访客的名片不会记录。
-                </p>
                 {loading ? (
                   <output>正在加载…</output>
                 ) : (
@@ -541,11 +576,14 @@ export const CardManagement = forwardRef<
                           <TableCell>{row.phone}</TableCell>
                           <TableCell>{row.email}</TableCell>
                           <TableCell>
-                            <p className="max-w-48 break-all">
+                            <button
+                              className="block max-w-48 break-all text-left text-blue-700 underline"
+                              onClick={() => setSource(row)}
+                            >
                               {row.source === 'manual'
                                 ? '手动制作'
                                 : row.source}
-                            </p>
+                            </button>
                             <span
                               className={
                                 row.needs_review
@@ -579,6 +617,14 @@ export const CardManagement = forwardRef<
                             >
                               历史版本
                             </Button>
+                            <Button
+                              variant="ghost"
+                              className="text-red-700"
+                              disabled={busy}
+                              onClick={() => setDeleting(row)}
+                            >
+                              删除记录
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -587,7 +633,7 @@ export const CardManagement = forwardRef<
                 )}
                 {!loading && !records.length && (
                   <p className="py-8 text-center text-slate-500">
-                    还没有名片记录。在制作页保存或下载一张名片即可建立记录。
+                    还没有名片记录。导入或下载一张名片即可建立记录。
                   </p>
                 )}
                 <div className="mt-4 flex items-center gap-3">
@@ -697,6 +743,133 @@ export const CardManagement = forwardRef<
           )}
         </div>
       </section>
+      <Dialog
+        open={!!deleting}
+        onOpenChange={(open) => {
+          if (!open) setDeleting(null);
+        }}
+      >
+        <DialogContent>
+          <DialogTitle>删除这条名片记录？</DialogTitle>
+          <DialogDescription>
+            {deleting?.name || '未填写姓名'}
+            ：删除后将从团队记录中移除，可通过提示中的“撤销删除”恢复。
+          </DialogDescription>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setDeleting(null)}>
+              取消
+            </Button>
+            <Button
+              disabled={busy}
+              onClick={() =>
+                void action(async () => {
+                  if (!deleting) return;
+                  const { error } = await supabase.rpc('card_delete', {
+                    record_id: deleting.id,
+                    expected_version: deleting.version,
+                  });
+                  if (error)
+                    throw new Error(
+                      error.code === '40001'
+                        ? '记录已变化，请刷新后重试。'
+                        : '删除失败，请重试。',
+                    );
+                  if (selected.current?.id === deleting.id)
+                    selected.current = null;
+                  setUndo(deleting.id);
+                  setDeleting(null);
+                  setHistory([]);
+                  setRevision((n) => n + 1);
+                  setMessage('记录已移除。');
+                })
+              }
+            >
+              确认删除
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={!!source}
+        onOpenChange={(open) => {
+          if (!open) setSource(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-auto">
+          <DialogTitle>来源图片预览</DialogTitle>
+          <DialogDescription>
+            {source?.source === 'manual'
+              ? '手动制作的名片没有导入原图。'
+              : source?.source}
+          </DialogDescription>
+          {sourceStatus && <p role="status">{sourceStatus}</p>}
+          {sourceUrl && (
+            <img
+              src={sourceUrl}
+              alt="导入名片原图"
+              className="max-h-[65vh] w-full object-contain"
+              onError={() => {
+                setSourceUrl('');
+                setSourceStatus('原图加载失败，请关闭后重新打开。');
+              }}
+            />
+          )}
+          {!sourceUrl && source && (
+            <label className="inline-flex w-fit cursor-pointer rounded-md border bg-white px-4 py-2">
+              补传原图
+              <input
+                type="file"
+                className="hidden"
+                accept="image/png,image/jpeg,image/webp,image/bmp"
+                disabled={busy}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = '';
+                  if (!file) return;
+                  const row = source;
+                  void action(async () => {
+                    if (file.size > 20 * 1024 * 1024)
+                      throw new Error('图片不能超过 20 MB。');
+                    const bitmap = await createImageBitmap(file);
+                    const canvas = document.createElement('canvas');
+                    const scale = Math.min(
+                      1,
+                      3000 / Math.max(bitmap.width, bitmap.height),
+                    );
+                    canvas.width = Math.ceil(bitmap.width * scale);
+                    canvas.height = Math.ceil(bitmap.height * scale);
+                    const ctx = canvas.getContext('2d')!;
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+                    bitmap.close();
+                    const blob = await new Promise<Blob | null>((resolve) =>
+                      canvas.toBlob(resolve, 'image/png'),
+                    );
+                    canvas.width = 0;
+                    canvas.height = 0;
+                    if (!blob) throw new Error('图片读取失败。');
+                    const { error } = await supabase.storage
+                      .from('card-sources')
+                      .upload(`${row.id}/source.png`, blob, {
+                        contentType: 'image/png',
+                        upsert: false,
+                      });
+                    if (error)
+                      throw new Error(
+                        '上传失败，可能已有原图或权限已变化，请重新打开预览。',
+                      );
+                    setSource((current) =>
+                      current?.id === row.id ? { ...row } : current,
+                    );
+                    setMessage('原图已保存，仅管理者可查看。');
+                  });
+                }}
+              />
+            </label>
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog
         open={!!editing}
         onOpenChange={(open) => {

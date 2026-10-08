@@ -1,4 +1,4 @@
-import { parseCardData } from './card-parser';
+import { parseOcrCard } from './card-ocr-parser';
 
 export type ImportedCard = {
   name: string;
@@ -6,6 +6,7 @@ export type ImportedCard = {
   phone: string;
   email: string;
   source: string;
+  preview?: Blob;
 };
 const aliases = {
   name: ['姓名', '名字', 'name', 'fullname', 'full name'],
@@ -117,7 +118,7 @@ export function createCardImporter(
   function fromText(text: string, source: string): ImportedCard {
     if (!text.trim())
       throw new Error('未识别到文字，请使用清晰、正向的名片图片。');
-    const card = parseCardData(text);
+    const card = parseOcrCard(text);
     return {
       name: card.name ?? '',
       title: card.title ?? '',
@@ -191,7 +192,7 @@ export function createCardImporter(
                 'str' in item ? item.str + (item.hasEOL ? '\n' : ' ') : '',
               )
               .join('');
-            if (text.trim().length < 15) {
+            {
               const viewport = page.getViewport({
                 scale: Math.min(3, 2400 / Math.max(page.view[2], page.view[3])),
               });
@@ -199,11 +200,17 @@ export function createCardImporter(
               canvas.width = Math.ceil(viewport.width);
               canvas.height = Math.ceil(viewport.height);
               await page.render({ canvas, viewport }).promise;
-              text = await recognize(canvas);
+              if (text.trim().length < 15) text = await recognize(canvas);
+              const preview = await new Promise<Blob | null>((resolve) =>
+                canvas.toBlob(resolve, 'image/png'),
+              );
+              yield {
+                ...fromText(text, `${file.name} · 第 ${i} 页`),
+                preview: preview ?? undefined,
+              };
               canvas.width = 0;
               canvas.height = 0;
             }
-            yield fromText(text, `${file.name} · 第 ${i} 页`);
             page.cleanup();
           }
         } finally {
@@ -222,7 +229,11 @@ export function createCardImporter(
         ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
         bitmap.close();
         try {
-          yield fromText(await recognize(canvas), file.name);
+          const text = await recognize(canvas);
+          const preview = await new Promise<Blob | null>((resolve) =>
+            canvas.toBlob(resolve, 'image/png'),
+          );
+          yield { ...fromText(text, file.name), preview: preview ?? undefined };
         } finally {
           canvas.width = 0;
           canvas.height = 0;
