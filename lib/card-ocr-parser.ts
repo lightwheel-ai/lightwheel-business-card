@@ -77,7 +77,7 @@ export function parseOcrCard(text: string) {
     if (/[\u3400-\u9fff]/.test(line))
       line = line.replace(/([\u3400-\u9fff])\s+(?=[\u3400-\u9fff])/g, '$1');
     if (!line) continue;
-    if (role.test(line)) {
+    if (role.test(line) || /\b(?:GTM|go.to.market)\b/i.test(line)) {
       title ||= line;
       continue;
     }

@@ -219,3 +219,64 @@ select {
     padding: 18px 12px;
   }
 }
+
+/* Borderless application chrome; do not touch the card's vector artwork. */
+body
+  :where(
+    div,
+    section,
+    header,
+    main,
+    form,
+    label,
+    table,
+    thead,
+    tbody,
+    tr,
+    th,
+    td,
+    button,
+    input,
+    textarea,
+    select
+  ) {
+  border-width: 0 !important;
+  outline: none !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-inset-ring-shadow: 0 0 #0000 !important;
+}
+body
+  :where(input:not([type='checkbox']):not([type='radio']), textarea, select) {
+  background-color: #f1f4f8;
+}
+body :where(button, input, textarea, select):focus-visible {
+  background-color: #e3ecfc;
+}
+body tr:nth-child(even) {
+  background-color: #f7f9fc;
+}
+body [data-slot='dialog-content'] {
+  background-color: white;
+}
+body [data-slot='dialog-content'] img {
+  border: none !important;
+}
+.instant-hint {
+  position: relative;
+  cursor: pointer;
+}
+.instant-hint:is(:hover, :focus-visible)::after {
+  content: attr(data-hint);
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 50;
+  padding: 6px 9px;
+  border-radius: 6px;
+  background: white;
+  color: #172033;
+  box-shadow: 0 4px 16px rgb(20 40 72 / 16%);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}

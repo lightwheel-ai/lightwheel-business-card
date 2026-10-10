@@ -3,6 +3,7 @@ import {
   detectCardTemplate,
   pdfTextLines,
 } from './card-ocr-parser';
+import { findIdentityRegions } from './card-ocr-layout';
 
 export type ImportedCard = {
   name: string;
@@ -97,12 +98,15 @@ export function createCardImporter(
   progress: (text: string) => void,
 ) {
   let worker: import('tesseract.js').Worker | undefined;
+  let chineseWorker: import('tesseract.js').Worker | undefined;
   const check = () => {
     if (signal.aborted) throw new Error('导入已停止');
   };
   const cancel = () => {
     void worker?.terminate();
+    void chineseWorker?.terminate();
     worker = undefined;
+    chineseWorker = undefined;
   };
   signal.addEventListener('abort', cancel, { once: true });
   async function recognize(image: File | HTMLCanvasElement) {
@@ -110,7 +114,7 @@ export function createCardImporter(
     if (!worker) {
       progress('首次识别正在下载中英文语言包…');
       const { createWorker } = await import('tesseract.js');
-      worker = await createWorker('chi_sim+eng', 1, {
+      worker = await createWorker('eng', 1, {
         logger: (m) => {
           if (m.status === 'recognizing text')
             progress(`正在识别文字 ${Math.round(m.progress * 100)}%`);
@@ -127,7 +131,76 @@ export function createCardImporter(
     });
     const { data } = await worker!.recognize(image);
     check();
-    return data.text;
+    const first = parseOcrCard(data.text);
+    if (image instanceof HTMLCanvasElement) {
+      const regions = findIdentityRegions(
+        image.width,
+        image.height,
+        image.getContext('2d')!.getImageData(0, 0, image.width, image.height)
+          .data,
+      );
+      if (!chineseWorker) {
+        const { createWorker } = await import('tesseract.js');
+        chineseWorker = await createWorker('chi_sim', 1);
+        if (signal.aborted) {
+          cancel();
+          check();
+        }
+      }
+      await chineseWorker.setParameters({
+        tessedit_pageseg_mode: '7' as import('tesseract.js').PSM,
+      });
+      const chinese = { name: '', title: '' };
+      const english = { name: '', title: '' };
+      for (const [index, region] of (regions ?? []).entries()) {
+        const c = parseOcrCard(
+          (await chineseWorker.recognize(image, { rectangle: region })).data
+            .text,
+        );
+        check();
+        const e = parseOcrCard(
+          (await worker!.recognize(image, { rectangle: region })).data.text,
+        );
+        check();
+        if (/[\u3400-\u9fff]/.test(c.name)) {
+          if (index === 0) chinese.name = c.name;
+          else chinese.title ||= c.title || c.name;
+        }
+        if (index === 0) english.name = e.name;
+        else english.title ||= e.title || e.name;
+      }
+      const hasChineseName = /[\u3400-\u9fff]/.test(chinese.name);
+      first.name = (hasChineseName ? chinese.name : english.name) || first.name;
+      first.title =
+        (hasChineseName ? chinese.title : english.title) || first.title;
+    }
+    if (!first.name || !first.title || !first.phone || !first.email) {
+      progress('正在复核遗漏字段…');
+      // Sparse layout can split a short Chinese name into separate regions.
+      // Try automatic page layout too; only fill gaps, never replace a first-pass value.
+      await worker!.setParameters({
+        tessedit_pageseg_mode: '3' as import('tesseract.js').PSM,
+      });
+      const { data: secondData } = await worker!.recognize(image);
+      check();
+      const second = parseOcrCard(secondData.text);
+      return [
+        first.name || second.name ? `姓名: ${first.name || second.name}` : '',
+        first.title || second.title
+          ? `职位: ${first.title || second.title}`
+          : '',
+        first.phone || second.phone,
+        first.email || second.email,
+      ]
+        .filter(Boolean)
+        .join('\n');
+    }
+    return [
+      `姓名: ${first.name}`,
+      `职位: ${first.title}`,
+      first.phone,
+      first.email,
+    ].join('\n');
   }
   function fromText(text: string, source: string): ImportedCard {
     if (!text.trim())
@@ -282,7 +355,9 @@ export function createCardImporter(
     async close() {
       signal.removeEventListener('abort', cancel);
       await worker?.terminate();
+      await chineseWorker?.terminate();
       worker = undefined;
+      chineseWorker = undefined;
     },
   };
 }

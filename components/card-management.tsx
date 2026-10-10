@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/table';
 
 type Fields = { name: string; title: string; phone: string; email: string };
+const PAGE_SIZE = 5;
 type Template = 'chinese' | 'english';
 type RecordRow = Fields & {
   id: string;
@@ -107,6 +108,30 @@ export const CardManagement = forwardRef<
   const identity = useRef<string | null>(null);
   const [revision, setRevision] = useState(0);
   const [editing, setEditing] = useState<RecordRow | null>(null);
+  const [reviewImage, setReviewImage] = useState('');
+  const [reviewImageStatus, setReviewImageStatus] = useState('');
+  const [hasNextPage, setHasNextPage] = useState(false);
+  useEffect(() => {
+    let live = true;
+    setReviewImage('');
+    if (!editing || !access.manager) return;
+    setReviewImageStatus('正在加载原图…');
+    supabase.storage
+      .from('card-sources')
+      .createSignedUrl(`${editing.id}/source.png`, 600)
+      .then(({ data, error }) => {
+        if (!live) return;
+        setReviewImage(data?.signedUrl ?? '');
+        setReviewImageStatus(
+          error || !data?.signedUrl
+            ? '这条记录没有可用原图，请先在来源中补传图片。'
+            : '',
+        );
+      });
+    return () => {
+      live = false;
+    };
+  }, [editing?.id, access.manager]);
   const [deleting, setDeleting] = useState<RecordRow | null>(null);
   const [undo, setUndo] = useState<string | null>(null);
   const [source, setSource] = useState<RecordRow | null>(null);
@@ -224,14 +249,17 @@ export const CardManagement = forwardRef<
       );
     query
       .order('updated_at', { ascending: false })
-      .range(page * 100, page * 100 + 99)
+      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
       .then(({ data, error }) => {
         if (!live) return;
         setLoading(false);
         if (error) {
           setRecords([]);
           setMessage('记录加载失败，请重新登录或重试。');
-        } else setRecords(data ?? []);
+        } else {
+          setHasNextPage((data?.length ?? 0) > PAGE_SIZE);
+          setRecords((data ?? []).slice(0, PAGE_SIZE));
+        }
       });
     return () => {
       live = false;
@@ -763,8 +791,8 @@ export const CardManagement = forwardRef<
                         <TableRow key={row.id}>
                           <TableCell>
                             <button
-                              className="font-medium text-blue-700 underline"
-                              title="点击进入制作页，编辑这张名片"
+                              className="instant-hint font-medium text-blue-700 underline"
+                              data-hint="点击进入制作页编辑"
                               aria-label={`${row.name || '未填写姓名'}，点击进入制作页编辑`}
                               onClick={() => loadRecord(row)}
                             >
@@ -857,7 +885,7 @@ export const CardManagement = forwardRef<
                   <span>第 {page + 1} 页</span>
                   <Button
                     variant="outline"
-                    disabled={records.length < 100 || loading}
+                    disabled={!hasNextPage || loading}
                     onClick={() => setPage((p) => p + 1)}
                   >
                     下一页
@@ -1141,95 +1169,116 @@ export const CardManagement = forwardRef<
           if (!open) setEditing(null);
         }}
       >
-        <DialogContent>
+        <DialogContent className="review-dialog w-[calc(100vw-2rem)] sm:max-w-6xl max-h-[90svh] overflow-y-auto">
           <DialogTitle>编辑并核对名片</DialogTitle>
           <DialogDescription>
             确认识别内容无误后保存，历史版本会保留。
           </DialogDescription>
-          {editing && (
-            <form
-              className="grid gap-3"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void action(async () => {
-                  const { data, error } = await supabase.rpc('card_save', {
-                    fields: {
-                      name: editing.name,
-                      title: editing.title,
-                      phone: editing.phone,
-                      email: editing.email,
-                      template: editing.template,
-                      needs_review: false,
-                    },
-                    record_id: editing.id,
-                    expected_version: editing.version,
-                    event_action: 'edit',
-                  });
-                  if (error)
-                    throw new Error(
-                      error.code === '40001'
-                        ? '该条记录已被修改，请关闭后刷新记录再编辑。'
-                        : '保存失败，请检查权限后重试。',
+          <div className="grid min-w-0 gap-6 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+            <div className="min-w-0 rounded-xl bg-slate-100 p-4 md:sticky md:top-0 md:self-start">
+              <p className="mb-3 text-sm text-slate-600">
+                原始名片 · 对照右侧修改信息
+              </p>
+              {reviewImageStatus && <p role="status">{reviewImageStatus}</p>}
+              {reviewImage && (
+                <img
+                  src={reviewImage}
+                  alt="核对用名片原图"
+                  className="mx-auto max-h-[65svh] max-w-full bg-white object-contain shadow-md"
+                  onError={() => {
+                    setReviewImage('');
+                    setReviewImageStatus(
+                      '原图加载失败，请关闭核对窗口后重试。',
                     );
-                  if (selected.current?.id === editing.id)
-                    selected.current = data as RecordRow;
-                  setEditing(null);
-                  setRevision((n) => n + 1);
-                  setMessage('已保存并标记为已核对。');
-                });
-              }}
-            >
-              <label>
-                模板
-                <select
-                  aria-label="核对名片模板"
-                  className="mt-1 block w-full rounded-md border bg-white p-2"
-                  value={editing.template}
-                  onChange={(e) =>
-                    setEditing({
-                      ...editing,
-                      template: e.target.value as Template,
-                    })
-                  }
-                >
-                  <option value="chinese">中文模板</option>
-                  <option value="english">英文模板</option>
-                </select>
-              </label>
-              {(['name', 'title', 'phone', 'email'] as const).some(
-                (key) => !editing[key].trim(),
-              ) && (
-                <p className="text-sm text-amber-700">
-                  有未识别或原图未提供的字段，请对照原图核对；系统不会猜测补全。
-                </p>
+                  }}
+                />
               )}
-              {(['name', 'title', 'phone', 'email'] as const).map((key) => (
-                <label key={key} htmlFor={`edit-${key}`}>
-                  {
-                    {
-                      name: '姓名',
-                      title: '职位',
-                      phone: '电话',
-                      email: '邮箱',
-                    }[key]
-                  }
-                  <Input
-                    id={`edit-${key}`}
-                    value={editing[key]}
-                    maxLength={
-                      { name: 160, title: 240, phone: 100, email: 254 }[key]
-                    }
+            </div>
+            {editing && (
+              <form
+                className="grid gap-3"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void action(async () => {
+                    const { data, error } = await supabase.rpc('card_save', {
+                      fields: {
+                        name: editing.name,
+                        title: editing.title,
+                        phone: editing.phone,
+                        email: editing.email,
+                        template: editing.template,
+                        needs_review: false,
+                      },
+                      record_id: editing.id,
+                      expected_version: editing.version,
+                      event_action: 'edit',
+                    });
+                    if (error)
+                      throw new Error(
+                        error.code === '40001'
+                          ? '该条记录已被修改，请关闭后刷新记录再编辑。'
+                          : '保存失败，请检查权限后重试。',
+                      );
+                    if (selected.current?.id === editing.id)
+                      selected.current = data as RecordRow;
+                    setEditing(null);
+                    setRevision((n) => n + 1);
+                    setMessage('已保存并标记为已核对。');
+                  });
+                }}
+              >
+                <label>
+                  模板
+                  <select
+                    aria-label="核对名片模板"
+                    className="mt-1 block w-full rounded-md border bg-white p-2"
+                    value={editing.template}
                     onChange={(e) =>
-                      setEditing({ ...editing, [key]: e.target.value })
+                      setEditing({
+                        ...editing,
+                        template: e.target.value as Template,
+                      })
                     }
-                  />
+                  >
+                    <option value="chinese">中文模板</option>
+                    <option value="english">英文模板</option>
+                  </select>
                 </label>
-              ))}
-              <Button type="submit" disabled={busy}>
-                保存并标记已核对
-              </Button>
-            </form>
-          )}
+                {(['name', 'title', 'phone', 'email'] as const).some(
+                  (key) => !editing[key].trim(),
+                ) && (
+                  <p className="text-sm text-amber-700">
+                    有未识别或原图未提供的字段，请对照原图核对；系统不会猜测补全。
+                  </p>
+                )}
+                {(['name', 'title', 'phone', 'email'] as const).map((key) => (
+                  <label key={key} htmlFor={`edit-${key}`}>
+                    {
+                      {
+                        name: '姓名',
+                        title: '职位',
+                        phone: '电话',
+                        email: '邮箱',
+                      }[key]
+                    }
+                    <Input
+                      id={`edit-${key}`}
+                      value={editing[key]}
+                      maxLength={
+                        { name: 160, title: 240, phone: 100, email: 254 }[key]
+                      }
+                      onChange={(e) =>
+                        setEditing({ ...editing, [key]: e.target.value })
+                      }
+                    />
+                  </label>
+                ))}
+                <Button type="submit" disabled={busy}>
+                  保存并标记已核对
+                </Button>
+              </form>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </>

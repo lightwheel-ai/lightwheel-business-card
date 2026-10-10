@@ -4,8 +4,19 @@ import {
   detectCardTemplate,
   pdfTextLines,
 } from '../lib/card-ocr-parser.ts';
+import { findIdentityRegions } from '../lib/card-ocr-layout.ts';
 
 const cases = [
+  [
+    'Lightwheel\nAmy Tan\nGTM, Physical AI\n+1 617 515 7700\namytan@lightwheel.ai',
+    'Amy Tan',
+    'GTM, Physical AI',
+  ],
+  [
+    '光轮智能\n陈 铭\n工程 副 总 裁\n17621319535\nming.chen@lightwheel.ai',
+    '陈铭',
+    '工程副总裁',
+  ],
   [
     '4) Lightwheel\nChristopher Jiao\nSolution Architect\n+1 818 233 2603\njiao@lightwheel.ai\n2445 Augustine Dr Santa Clara, CA 95054\nlightwheel.ai',
     'Christopher Jiao',
@@ -75,3 +86,15 @@ assert.equal(pdfTextLines(items), 'Test Person\nDirector');
 console.log(
   'PASS contact spacing, LinkedIn exclusion, template detection and PDF reading order',
 );
+const width = 800;
+const height = 988;
+const pixels = new Uint8ClampedArray(width * height * 4);
+for (let y = 208; y < 232; y++)
+  for (let x = 80; x < 180; x++)
+    pixels.set([20, 62, 141, 255], (y * width + x) * 4);
+for (let y = 268; y < 292; y++)
+  for (let x = 80; x < 280; x++)
+    pixels.set([20, 62, 141, 255], (y * width + x) * 4);
+assert.equal(findIdentityRegions(width, height, pixels)?.length, 2);
+assert.equal(findIdentityRegions(1000, 500, pixels), undefined);
+console.log('PASS template identity-line region detection');
