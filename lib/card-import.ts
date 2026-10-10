@@ -1,4 +1,8 @@
-import { parseOcrCard } from './card-ocr-parser';
+import {
+  parseOcrCard,
+  detectCardTemplate,
+  pdfTextLines,
+} from './card-ocr-parser';
 
 export type ImportedCard = {
   name: string;
@@ -7,6 +11,7 @@ export type ImportedCard = {
   email: string;
   source: string;
   preview?: Blob;
+  template?: 'chinese' | 'english';
 };
 const aliases = {
   name: ['姓名', '名字', 'name', 'fullname', 'full name'],
@@ -75,6 +80,11 @@ export function cardsFromRows(
       phone: row[columns.phone]?.trim() ?? '',
       email: row[columns.email]?.trim() ?? '',
       source: `${source} · 第 ${headerIndex + i + 2} 行`,
+      template: detectCardTemplate(
+        row[columns.name] ?? '',
+        row[columns.title] ?? '',
+        source,
+      ),
     }))
     .filter((row) => keys.some((key) => row[key]));
   if (cards.length > 500)
@@ -100,7 +110,7 @@ export function createCardImporter(
     if (!worker) {
       progress('首次识别正在下载中英文语言包…');
       const { createWorker } = await import('tesseract.js');
-      worker = await createWorker('eng+chi_sim', 1, {
+      worker = await createWorker('chi_sim+eng', 1, {
         logger: (m) => {
           if (m.status === 'recognizing text')
             progress(`正在识别文字 ${Math.round(m.progress * 100)}%`);
@@ -111,6 +121,10 @@ export function createCardImporter(
         check();
       }
     }
+    await worker!.setParameters({
+      tessedit_pageseg_mode: '11' as import('tesseract.js').PSM,
+      preserve_interword_spaces: '1',
+    });
     const { data } = await worker!.recognize(image);
     check();
     return data.text;
@@ -125,6 +139,7 @@ export function createCardImporter(
       phone: card.phone ?? '',
       email: card.email ?? '',
       source,
+      template: detectCardTemplate(card.name, card.title, source),
     };
   }
   return {
@@ -187,11 +202,9 @@ export function createCardImporter(
             progress(`读取 PDF 第 ${i} / ${doc.numPages} 页`);
             const page = await doc.getPage(i);
             const content = await page.getTextContent();
-            let text = content.items
-              .map((item) =>
-                'str' in item ? item.str + (item.hasEOL ? '\n' : ' ') : '',
-              )
-              .join('');
+            let text = pdfTextLines(
+              content.items.filter((item) => 'str' in item),
+            );
             {
               const viewport = page.getViewport({
                 scale: Math.min(3, 2400 / Math.max(page.view[2], page.view[3])),
@@ -200,7 +213,30 @@ export function createCardImporter(
               canvas.width = Math.ceil(viewport.width);
               canvas.height = Math.ceil(viewport.height);
               await page.render({ canvas, viewport }).promise;
-              if (text.trim().length < 15) text = await recognize(canvas);
+              const native = parseOcrCard(text);
+              // Outlined and partially outlined PDFs can retain only the address/email.
+              // Their non-empty text layer must not prevent OCR of the actual card.
+              if (
+                !native.name ||
+                !native.title ||
+                !native.email ||
+                !native.phone
+              ) {
+                const scanned = await recognize(canvas);
+                const ocr = parseOcrCard(scanned);
+                text = [
+                  native.name || ocr.name
+                    ? `姓名: ${native.name || ocr.name}`
+                    : '',
+                  native.title || ocr.title
+                    ? `职位: ${native.title || ocr.title}`
+                    : '',
+                  native.phone || ocr.phone,
+                  native.email || ocr.email,
+                ]
+                  .filter(Boolean)
+                  .join('\n');
+              }
               const preview = await new Promise<Blob | null>((resolve) =>
                 canvas.toBlob(resolve, 'image/png'),
               );
@@ -220,7 +256,7 @@ export function createCardImporter(
       } else if (['png', 'jpg', 'jpeg', 'webp', 'bmp'].includes(ext ?? '')) {
         const bitmap = await createImageBitmap(file);
         const canvas = document.createElement('canvas');
-        const scale = Math.min(1, 3000 / Math.max(bitmap.width, bitmap.height));
+        const scale = Math.min(3, 2600 / Math.max(bitmap.width, bitmap.height));
         canvas.width = Math.ceil(bitmap.width * scale);
         canvas.height = Math.ceil(bitmap.height * scale);
         const ctx = canvas.getContext('2d')!;

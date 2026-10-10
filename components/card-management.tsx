@@ -60,9 +60,15 @@ export const CardManagement = forwardRef<
   ManagementHandle,
   {
     template: Template;
+    current: Fields;
+    editRevision: number;
+    translating: boolean;
     onUse: (data: Fields, template: Template) => void;
   }
->(function CardManagement({ template, onUse }, ref) {
+>(function CardManagement(
+  { template, current, editRevision, translating, onUse },
+  ref,
+) {
   const [login, setLogin] = useState(false);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -77,10 +83,27 @@ export const CardManagement = forwardRef<
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [page, setPage] = useState(0);
+  const [search, setSearch] = useState('');
+  const recordsPanel = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const selected = useRef<RecordRow | null>(null);
   const generation = useRef(0);
   const pendingSave = useRef(false);
+  const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
+  const documentId = useRef(0);
+  const draft = useRef<{
+    fields: Fields;
+    template: Template;
+    actor: string;
+    document: number;
+    edit: number;
+  } | null>(null);
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const observedEdit = useRef(editRevision);
+  const latestEdit = useRef(editRevision);
+  latestEdit.current = editRevision;
+  const [saveStatus, setSaveStatus] = useState('');
+  const flushRef = useRef<() => Promise<void>>(async () => {});
   const identity = useRef<string | null>(null);
   const [revision, setRevision] = useState(0);
   const [editing, setEditing] = useState<RecordRow | null>(null);
@@ -134,6 +157,9 @@ export const CardManagement = forwardRef<
       setDeleting(null);
       setUndo(null);
       selected.current = null;
+      documentId.current++;
+      draft.current = null;
+      setSaveStatus('');
       setPage(0);
     }
     setUser(session?.user.email ?? null);
@@ -172,7 +198,10 @@ export const CardManagement = forwardRef<
       setTimeout(() => void refreshIdentity(), 0);
     });
     const focus = () => void refreshIdentity();
-    const route = () => setScreen(window.location.hash === '#records');
+    const route = () => {
+      void flushRef.current();
+      setScreen(window.location.hash === '#records');
+    };
     route();
     window.addEventListener('focus', focus);
     window.addEventListener('hashchange', route);
@@ -187,9 +216,13 @@ export const CardManagement = forwardRef<
     let live = true;
     if (!access.manager || !screen) return;
     setLoading(true);
-    supabase
-      .from('card_records')
-      .select('*')
+    let query = supabase.from('card_records').select('*');
+    if (search.trim())
+      query = query.ilike(
+        'name',
+        `%${search.trim().replace(/[\\%_]/g, '\\$&')}%`,
+      );
+    query
       .order('updated_at', { ascending: false })
       .range(page * 100, page * 100 + 99)
       .then(({ data, error }) => {
@@ -203,7 +236,7 @@ export const CardManagement = forwardRef<
     return () => {
       live = false;
     };
-  }, [access.manager, screen, page, revision]);
+  }, [access.manager, screen, page, revision, search]);
 
   async function action(work: () => Promise<void>) {
     if (busy) return;
@@ -223,6 +256,28 @@ export const CardManagement = forwardRef<
     event: string,
     row = selected.current,
     actor = identity.current,
+  ) {
+    const context = documentId.current;
+    const task = saveQueue.current
+      .catch(() => {})
+      .then(() =>
+        saveNow(
+          fields,
+          chosenTemplate,
+          event,
+          context === documentId.current ? selected.current : row,
+          actor,
+        ),
+      );
+    saveQueue.current = task.catch(() => {});
+    return task;
+  }
+  async function saveNow(
+    fields: Fields,
+    chosenTemplate: Template,
+    event: string,
+    row: RecordRow | null,
+    actor: string | null,
   ) {
     if (pendingSave.current)
       throw new Error('上一条记录仍在保存，请稍后重试。');
@@ -254,21 +309,96 @@ export const CardManagement = forwardRef<
       pendingSave.current = false;
     }
   }
+  async function flushDraft() {
+    if (draftTimer.current) clearTimeout(draftTimer.current);
+    const pending = draft.current;
+    if (!pending) {
+      await saveQueue.current;
+      return;
+    }
+    draft.current = null;
+    if (
+      pending.actor !== identity.current ||
+      pending.document !== documentId.current
+    )
+      return;
+    setSaveStatus('正在保存…');
+    try {
+      await save(
+        pending.fields,
+        pending.template,
+        'edit',
+        selected.current,
+        pending.actor,
+      );
+      if (
+        !draft.current &&
+        pending.document === documentId.current &&
+        pending.edit === latestEdit.current
+      )
+        setSaveStatus('已自动保存到历史记录');
+    } catch (error) {
+      if (
+        pending.document !== documentId.current ||
+        pending.edit !== latestEdit.current
+      )
+        return;
+      draft.current ||= pending;
+      setSaveStatus('自动保存失败，请重试');
+      setMessage(error instanceof Error ? error.message : '自动保存失败');
+    }
+  }
+  flushRef.current = flushDraft;
+  useEffect(() => {
+    if (translating || editRevision === observedEdit.current) return;
+    observedEdit.current = editRevision;
+    if (!access.manager || !identity.current) return;
+    draft.current = {
+      fields: { ...current },
+      template,
+      actor: identity.current,
+      document: documentId.current,
+      edit: editRevision,
+    };
+    setSaveStatus('等待自动保存…');
+    if (draftTimer.current) clearTimeout(draftTimer.current);
+    draftTimer.current = setTimeout(() => void flushRef.current(), 900);
+  }, [editRevision, translating, access.manager, current, template]);
+  useEffect(() => {
+    const leaving = (e: BeforeUnloadEvent) => {
+      if (draft.current || pendingSave.current) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    const retry = () => void flushRef.current();
+    window.addEventListener('beforeunload', leaving);
+    window.addEventListener('online', retry);
+    return () => {
+      window.removeEventListener('beforeunload', leaving);
+      window.removeEventListener('online', retry);
+      if (draftTimer.current) clearTimeout(draftTimer.current);
+    };
+  }, []);
   useImperativeHandle(ref, () => ({
     prepareDownload() {
+      const exportDocument = documentId.current;
+      const exportEdit = latestEdit.current;
       const row = selected.current;
       const actor = identity.current;
       const allowed = !!user && access.manager;
       return async (fields, chosenTemplate, kind) => {
         // Guests never persist card details. Database still authorizes every manager write.
         if (!allowed) return;
-        if (pendingSave.current) {
-          setMessage(
-            '文件已下载，但另一条记录仍在保存，请稍后重新下载以保存记录。',
-          );
-          return;
-        }
         try {
+          await flushRef.current();
+          if (
+            exportDocument !== documentId.current ||
+            exportEdit !== latestEdit.current
+          )
+            throw new Error(
+              '下载期间内容已变化，已保留最新编辑；请重新下载以关联当前版本。',
+            );
           await save(fields, chosenTemplate, kind, row, actor);
           setMessage('下载记录已保存。');
         } catch (e) {
@@ -279,14 +409,23 @@ export const CardManagement = forwardRef<
       };
     },
   }));
-  function loadRecord(row: RecordRow) {
-    selected.current = row;
-    onUse(row, row.template);
+  async function loadRecord(row: RecordRow) {
+    await flushRef.current();
+    if (draft.current) {
+      setMessage('当前编辑尚未保存成功，请重试后再切换名片。');
+      return;
+    }
+    const latestRow = selected.current?.id === row.id ? selected.current : row;
+    documentId.current++;
+    selected.current = latestRow;
+    setSaveStatus('');
+    onUse(latestRow, latestRow.template);
     window.location.hash = '';
     setHistory([]);
     setMessage('已载入记录，可修改后重新下载。');
   }
   async function loadHistory(row: RecordRow) {
+    await flushRef.current();
     const { data, error } = await supabase
       .from('card_events')
       .select('id,action,created_at,snapshot')
@@ -299,6 +438,19 @@ export const CardManagement = forwardRef<
   return (
     <>
       <div className="flex items-center gap-2">
+        {access.manager && saveStatus && (
+          <span role="status" className="text-xs text-slate-600">
+            {saveStatus}
+            {saveStatus.includes('失败') && (
+              <button
+                className="ml-2 underline"
+                onClick={() => void flushDraft()}
+              >
+                重试
+              </button>
+            )}
+          </span>
+        )}
         {access.manager && (
           <>
             <Button
@@ -328,6 +480,14 @@ export const CardManagement = forwardRef<
           className="fixed bottom-4 left-4 z-40 max-w-md rounded-xl border bg-white p-4 text-sm shadow-lg"
         >
           {message}
+          {saveStatus.includes('失败') && (
+            <button
+              className="ml-3 underline"
+              onClick={() => void flushDraft()}
+            >
+              重试保存
+            </button>
+          )}
           {undo && (
             <button
               className="ml-3 underline"
@@ -496,6 +656,9 @@ export const CardManagement = forwardRef<
                 disabled={busy}
                 onClick={() =>
                   void action(async () => {
+                    await flushRef.current();
+                    if (draft.current)
+                      throw new Error('编辑尚未保存成功，请重试保存后退出。');
                     const { error } = await supabase.auth.signOut();
                     if (error) throw new Error('退出失败，请重试。');
                     await refreshIdentity();
@@ -539,8 +702,42 @@ export const CardManagement = forwardRef<
                 template={template}
                 onSaved={() => setRevision((n) => n + 1)}
                 visible={true}
+                onViewRecords={() => {
+                  window.location.hash = '#records';
+                  setScreen(true);
+                  setSearch('');
+                  setPage(0);
+                  setRevision((n) => n + 1);
+                  setLogin(false);
+                  setEditing(null);
+                  setSource(null);
+                  setDeleting(null);
+                  requestAnimationFrame(() => {
+                    recordsPanel.current?.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start',
+                    });
+                    recordsPanel.current?.focus({ preventScroll: true });
+                  });
+                }}
               />
-              <div className="rounded-xl border bg-white p-4">
+              <div
+                ref={recordsPanel}
+                tabIndex={-1}
+                className="rounded-xl border bg-white p-4"
+              >
+                <label className="mb-4 flex max-w-md items-center gap-3">
+                  <span className="whitespace-nowrap">搜索姓名</span>
+                  <Input
+                    type="search"
+                    value={search}
+                    placeholder="输入姓名搜索全部记录"
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setPage(0);
+                    }}
+                  />
+                </label>
                 {loading ? (
                   <output>正在加载…</output>
                 ) : (
@@ -567,6 +764,8 @@ export const CardManagement = forwardRef<
                           <TableCell>
                             <button
                               className="font-medium text-blue-700 underline"
+                              title="点击进入制作页，编辑这张名片"
+                              aria-label={`${row.name || '未填写姓名'}，点击进入制作页编辑`}
                               onClick={() => loadRecord(row)}
                             >
                               {row.name || '未填写姓名'}
@@ -577,12 +776,21 @@ export const CardManagement = forwardRef<
                           <TableCell>{row.email}</TableCell>
                           <TableCell>
                             <button
-                              className="block max-w-48 break-all text-left text-blue-700 underline"
+                              className="block w-24 truncate text-left text-blue-700 underline"
+                              title={
+                                row.source === 'manual'
+                                  ? '手动制作'
+                                  : row.source
+                              }
+                              aria-label={`查看来源：${row.source}`}
                               onClick={() => setSource(row)}
                             >
                               {row.source === 'manual'
                                 ? '手动制作'
-                                : row.source}
+                                : Array.from(row.source).slice(0, 4).join('') +
+                                  (Array.from(row.source).length > 4
+                                    ? '…'
+                                    : '')}
                             </button>
                             <span
                               className={
@@ -633,7 +841,9 @@ export const CardManagement = forwardRef<
                 )}
                 {!loading && !records.length && (
                   <p className="py-8 text-center text-slate-500">
-                    还没有名片记录。导入或下载一张名片即可建立记录。
+                    {search
+                      ? '没有找到匹配的姓名。'
+                      : '还没有名片记录。导入或制作一张名片即可建立记录。'}
                   </p>
                 )}
                 <div className="mt-4 flex items-center gap-3">
@@ -666,12 +876,23 @@ export const CardManagement = forwardRef<
                     >
                       <span>
                         {new Date(item.created_at).toLocaleString()} ·{' '}
-                        {item.action} · {item.snapshot.name} /{' '}
-                        {item.snapshot.title}
+                        {(
+                          {
+                            import: '导入',
+                            edit: '编辑',
+                            pdf: 'PDF 下载',
+                            png: 'PNG 下载',
+                            create: '新建',
+                          } as Record<string, string>
+                        )[item.action] ?? item.action}{' '}
+                        · {item.snapshot.name} / {item.snapshot.title}
                       </span>
                       <Button
                         variant="outline"
-                        onClick={() => {
+                        onClick={async () => {
+                          await flushRef.current();
+                          if (draft.current) return;
+                          documentId.current++;
                           selected.current = null;
                           onUse(item.snapshot, item.snapshot.template);
                           window.location.hash = '';
@@ -797,22 +1018,66 @@ export const CardManagement = forwardRef<
       >
         <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-auto">
           <DialogTitle>来源图片预览</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="break-all">
             {source?.source === 'manual'
               ? '手动制作的名片没有导入原图。'
               : source?.source}
           </DialogDescription>
           {sourceStatus && <p role="status">{sourceStatus}</p>}
           {sourceUrl && (
-            <img
-              src={sourceUrl}
-              alt="导入名片原图"
-              className="max-h-[65vh] w-full object-contain"
-              onError={() => {
-                setSourceUrl('');
-                setSourceStatus('原图加载失败，请关闭后重新打开。');
-              }}
-            />
+            <div className="rounded-lg border-2 border-slate-300 bg-slate-100 p-4">
+              <img
+                src={sourceUrl}
+                alt="导入名片原图"
+                className="mx-auto max-h-[60vh] max-w-full border border-slate-300 bg-white object-contain shadow-sm"
+                onError={() => {
+                  setSourceUrl('');
+                  setSourceStatus('原图加载失败，请关闭后重新打开。');
+                }}
+              />
+            </div>
+          )}
+          {sourceUrl && source && (
+            <Button
+              disabled={busy}
+              onClick={() =>
+                void action(async () => {
+                  const row = source;
+                  const response = await fetch(sourceUrl);
+                  if (!response.ok)
+                    throw new Error('原图链接已过期，请关闭后重新打开。');
+                  const { createCardImporter } =
+                    await import('@/lib/card-import');
+                  const importer = createCardImporter(
+                    new AbortController().signal,
+                    setSourceStatus,
+                  );
+                  try {
+                    for await (const result of importer.read(
+                      new File([await response.blob()], 'source.png', {
+                        type: 'image/png',
+                      }),
+                    )) {
+                      setEditing({
+                        ...row,
+                        name: result.name,
+                        title: result.title,
+                        phone: result.phone,
+                        email: result.email,
+                        template: result.template ?? row.template,
+                      });
+                      setSource(null);
+                      setMessage('已重新识别，核对后点击保存才会更新记录。');
+                    }
+                  } finally {
+                    await importer.close();
+                    setSourceStatus('');
+                  }
+                })
+              }
+            >
+              {busy ? '正在重新识别…' : '重新识别并核对'}
+            </Button>
           )}
           {!sourceUrl && source && (
             <label className="inline-flex w-fit cursor-pointer rounded-md border bg-white px-4 py-2">
@@ -914,6 +1179,30 @@ export const CardManagement = forwardRef<
                 });
               }}
             >
+              <label>
+                模板
+                <select
+                  aria-label="核对名片模板"
+                  className="mt-1 block w-full rounded-md border bg-white p-2"
+                  value={editing.template}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      template: e.target.value as Template,
+                    })
+                  }
+                >
+                  <option value="chinese">中文模板</option>
+                  <option value="english">英文模板</option>
+                </select>
+              </label>
+              {(['name', 'title', 'phone', 'email'] as const).some(
+                (key) => !editing[key].trim(),
+              ) && (
+                <p className="text-sm text-amber-700">
+                  有未识别或原图未提供的字段，请对照原图核对；系统不会猜测补全。
+                </p>
+              )}
               {(['name', 'title', 'phone', 'email'] as const).map((key) => (
                 <label key={key} htmlFor={`edit-${key}`}>
                   {

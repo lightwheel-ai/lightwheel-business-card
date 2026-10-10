@@ -15,7 +15,10 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { parseCardData } from '@/lib/card-parser';
 import { loadPingFangPaths, type PathFace } from '@/lib/pingfang';
-import { CardManagement, type ManagementHandle } from '@/components/card-management';
+import {
+  CardManagement,
+  type ManagementHandle,
+} from '@/components/card-management';
 
 type Template = 'english' | 'chinese';
 type CardData = { name: string; title: string; phone: string; email: string };
@@ -59,20 +62,51 @@ function ChineseEmail({ text }: { text: string }) {
   const [face, setFace] = useState<PathFace>();
   useEffect(() => {
     let active = true;
-    loadPingFangPaths(assetUrl).then((fonts) => { if (active) setFace(fonts.regular); }).catch(() => {});
-    return () => { active = false; };
+    loadPingFangPaths(assetUrl)
+      .then((fonts) => {
+        if (active) setFace(fonts.regular);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
   }, []);
-  if (!face) return <text x="35.0229" y="136.7699" fontSize="5.4427" fontFamily="PingFang SC" fill="#221714" data-font-ready="false">{text}</text>;
+  if (!face)
+    return (
+      <text
+        x="35.0229"
+        y="136.7699"
+        fontSize="5.4427"
+        fontFamily="PingFang SC"
+        fill="#221714"
+        data-font-ready="false"
+      >
+        {text}
+      </text>
+    );
   const scale = 5.4427 / face.unitsPerEm;
   let cursor = 0;
-  return <g fill="#221714" data-font-ready="true" aria-label={text} transform={`translate(35.0229 136.7699) scale(${scale})`}>
-    {Array.from(text).map((char, index) => {
-      const glyph = face.glyphs[char] ?? face.glyphs['?'];
-      const x = cursor;
-      cursor += glyph?.advance ?? face.unitsPerEm * 0.6;
-      return <path key={index} d={glyph?.path || ''} transform={`translate(${x} 0)`} />;
-    })}
-  </g>;
+  return (
+    <g
+      fill="#221714"
+      data-font-ready="true"
+      aria-label={text}
+      transform={`translate(35.0229 136.7699) scale(${scale})`}
+    >
+      {Array.from(text).map((char, index) => {
+        const glyph = face.glyphs[char] ?? face.glyphs['?'];
+        const x = cursor;
+        cursor += glyph?.advance ?? face.unitsPerEm * 0.6;
+        return (
+          <path
+            key={index}
+            d={glyph?.path || ''}
+            transform={`translate(${x} 0)`}
+          />
+        );
+      })}
+    </g>
+  );
 }
 
 function BusinessCard({
@@ -199,6 +233,7 @@ export default function Home() {
   const [template, setTemplate] = useState<Template>('chinese');
   const [values, setValues] = useState<Record<Template, CardData>>(defaults);
   const [bulk, setBulk] = useState('');
+  const [editRevision, setEditRevision] = useState(0);
   const [exportState, setExportState] = useState<ExportState>('idle');
   const [translationState, setTranslationState] =
     useState<TranslationState>('idle');
@@ -215,6 +250,7 @@ export default function Home() {
     exportState === 'pdf-working' || exportState === 'png-working';
 
   function update(field: keyof CardData, value: string) {
+    setEditRevision((n) => n + 1);
     if (
       translationState === 'working' &&
       (field === 'name' || field === 'title')
@@ -241,8 +277,9 @@ export default function Home() {
     translationAbortRef.current = controller;
 
     setTemplate(nextTemplate);
+    setEditRevision((n) => n + 1);
     // Copy this person's contacts as well, never mix with the other template's example.
-    setValues(current => ({...current, [nextTemplate]: {...sourceData}}));
+    setValues((current) => ({ ...current, [nextTemplate]: { ...sourceData } }));
     if (!sourceData.name.trim() && !sourceData.title.trim()) {
       setTranslationState('idle');
       return;
@@ -284,6 +321,7 @@ export default function Home() {
         },
       }));
 
+      setEditRevision((n) => n + 1);
       const succeeded =
         nameResult.status === 'fulfilled' && titleResult.status === 'fulfilled';
       setTranslationState(succeeded ? 'done' : 'error');
@@ -301,6 +339,7 @@ export default function Home() {
   }
 
   function recognize(value: string) {
+    setEditRevision((n) => n + 1);
     setBulk(value);
     const parsed = parseCardData(value);
 
@@ -324,7 +363,9 @@ export default function Home() {
     await document.fonts.ready;
     if (template === 'chinese') {
       await loadPingFangPaths(assetUrl);
-      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
       if (exportRef.current.querySelector('[data-font-ready="false"]')) {
         throw new Error('邮箱字体尚未加载完成，请稍后重试。');
       }
@@ -451,14 +492,29 @@ export default function Home() {
               Business Card
             </span>
           </div>
-          <CardManagement ref={managementRef} template={template} onUse={(record, nextTemplate) => {
-            translationRequestRef.current += 1;
-            translationAbortRef.current?.abort();
-            setTranslationState('idle');
-            setBulk('');
-            setTemplate(nextTemplate);
-            setValues(currentValues => ({...currentValues, [nextTemplate]: {name:record.name,title:record.title,phone:record.phone,email:record.email}}));
-          }} />
+          <CardManagement
+            ref={managementRef}
+            current={data}
+            editRevision={editRevision}
+            translating={translationState === 'working'}
+            template={template}
+            onUse={(record, nextTemplate) => {
+              translationRequestRef.current += 1;
+              translationAbortRef.current?.abort();
+              setTranslationState('idle');
+              setBulk('');
+              setTemplate(nextTemplate);
+              setValues((currentValues) => ({
+                ...currentValues,
+                [nextTemplate]: {
+                  name: record.name,
+                  title: record.title,
+                  phone: record.phone,
+                  email: record.email,
+                },
+              }));
+            }}
+          />
         </div>
       </header>
 

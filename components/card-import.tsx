@@ -10,10 +10,12 @@ export function CardImport({
   template,
   onSaved,
   visible,
+  onViewRecords,
 }: {
   template: 'chinese' | 'english';
   onSaved: () => void;
   visible: boolean;
+  onViewRecords: () => void;
 }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [running, setRunning] = useState(false);
@@ -64,7 +66,7 @@ export function CardImport({
               fields: {
                 ...values,
                 source: fields.source.slice(0, 500),
-                template,
+                template: fields.template ?? template,
                 needs_review: true,
               },
               event_action: 'import',
@@ -168,10 +170,10 @@ export function CardImport({
         createPortal(
           <div className="fixed bottom-4 right-4 z-40 w-80 max-w-[calc(100vw-2rem)] space-y-3 rounded-xl border bg-white p-4 shadow-lg">
             <button
-              className="w-full text-left"
-              onClick={() => {
-                window.location.hash = '#records';
-              }}
+              type="button"
+              aria-label="查看导入记录"
+              className="w-full cursor-pointer rounded-md p-1 text-left hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-blue-600"
+              onClick={onViewRecords}
             >
               <strong className="block">
                 {running ? '正在导入名片' : '导入结果'} · {done}/{jobs.length}
