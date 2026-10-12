@@ -280,3 +280,144 @@ body [data-slot='dialog-content'] img {
   white-space: nowrap;
   pointer-events: none;
 }
+
+/* Light, spacious dashboard chrome inspired by the supplied workspace reference. */
+.app-header {
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 1px 0 rgb(22 34 52 / 5%);
+}
+.app-shell {
+  display: flex;
+  min-height: calc(100svh - 4rem);
+}
+.workspace-sidebar {
+  position: sticky;
+  top: 4rem;
+  display: flex;
+  flex: 0 0 224px;
+  flex-direction: column;
+  height: calc(100svh - 4rem);
+  padding: 26px 16px 18px;
+  background: #fff;
+  box-shadow: 1px 0 0 rgb(22 34 52 / 5%);
+}
+.sidebar-caption {
+  padding: 0 12px 12px;
+  color: #969ba5;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.sidebar-link {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: transparent;
+  color: #30343b;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.sidebar-link + .sidebar-link {
+  margin-top: 4px;
+}
+.sidebar-link svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.sidebar-link:hover,
+.sidebar-link.is-active {
+  background: #f1f2f4;
+  color: #1c2027;
+}
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: auto;
+  padding: 12px 8px 2px;
+  color: #89909c;
+  font-size: 11px;
+}
+.sidebar-brand img {
+  width: 25px;
+  height: 25px;
+  object-fit: contain;
+}
+.workspace-content {
+  min-width: 0;
+  flex: 1;
+}
+.workspace-grid {
+  width: 100%;
+  gap: 18px;
+}
+.editor-panel,
+.preview-panel {
+  border: 0;
+  border-radius: 22px;
+  box-shadow: 0 8px 30px rgb(23 32 51 / 5%);
+}
+.editor-panel {
+  padding: 26px;
+}
+.preview-panel {
+  padding: 26px;
+}
+.preview-stage {
+  border-radius: 18px;
+  background: #f1f2f4;
+}
+@media (max-width: 960px) {
+  .app-shell {
+    display: block;
+  }
+  .workspace-sidebar {
+    position: static;
+    display: flex;
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    box-shadow: 0 1px 0 rgb(22 34 52 / 5%);
+  }
+  .sidebar-caption,
+  .sidebar-brand {
+    display: none;
+  }
+  .sidebar-link {
+    min-height: 40px;
+    padding-inline: 12px;
+  }
+  .workspace-grid {
+    height: auto;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .editor-panel {
+    min-height: 0;
+    overflow: visible;
+  }
+  .preview-stage {
+    min-height: 56svh;
+  }
+}
+@media (max-width: 640px) {
+  .editor-panel,
+  .preview-panel {
+    padding: 20px;
+  }
+  .workspace-grid {
+    padding: 14px;
+  }
+  .workspace-sidebar {
+    padding-inline: 14px;
+  }
+}

@@ -3,7 +3,14 @@
 
 import { type Ref, useEffect, useMemo, useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
-import { Check, Download, FileText, LoaderCircle } from 'lucide-react';
+import {
+  Check,
+  ContactRound,
+  Download,
+  FileText,
+  Home,
+  LoaderCircle,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -478,9 +485,9 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f3f5f8] text-[#172033]">
-      <header className="border-b border-[#dfe4ec] bg-white">
-        <div className="mx-auto flex h-16 max-w-[1480px] items-center justify-between px-5 lg:px-8">
+    <main className="app-root min-h-screen bg-[#f7f8fa] text-[#172033]">
+      <header className="app-header bg-white">
+        <div className="flex h-16 items-center justify-between px-6">
           <div className="flex items-center gap-4">
             <img
               src={assetUrl('/lightwheel.svg')}
@@ -518,159 +525,195 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="workspace-grid mx-auto grid max-w-[1480px] gap-5 px-5 py-5 lg:grid-cols-2 lg:px-8">
-        <section className="editor-panel">
-          <div className="mb-4">
-            <h1 className="text-2xl font-semibold tracking-[-0.025em]">
-              自动生成名片
-            </h1>
-            <p className="mt-2 text-sm leading-6 text-[#697386]">
-              输入信息后，模板将自动同步。也可以粘贴整段信息进行识别。
-            </p>
+      <div className="app-shell">
+        <aside className="workspace-sidebar" aria-label="主导航">
+          <div className="sidebar-caption">工作台</div>
+          <button
+            type="button"
+            className="sidebar-link is-active"
+            onClick={() => {
+              window.location.hash = '';
+            }}
+          >
+            <Home aria-hidden="true" />
+            <span>名片制作</span>
+          </button>
+          <button
+            type="button"
+            className="sidebar-link"
+            onClick={() => {
+              window.location.hash = '#records';
+            }}
+          >
+            <ContactRound aria-hidden="true" />
+            <span>团队名片</span>
+          </button>
+          <div className="sidebar-brand">
+            <img src={assetUrl('/lightwheel.svg')} alt="" />
+            <span>Business Card Studio</span>
           </div>
+        </aside>
 
-          <div className="space-y-2">
-            <div className="flex min-h-5 items-center justify-between gap-3">
-              <Label htmlFor="template">模板</Label>
-              <output
-                className={`flex items-center gap-1.5 text-right text-xs ${
-                  translationState === 'error'
-                    ? 'text-[#b4232f]'
-                    : 'text-[#697386]'
-                }`}
-              >
-                {translationState === 'working' ? (
-                  <LoaderCircle className="size-3.5 animate-spin" />
-                ) : translationState === 'done' ? (
-                  <Check className="size-3.5" />
-                ) : null}
-                {translationState === 'idle'
-                  ? '姓名和职位由 MyMemory 自动翻译'
-                  : translationState === 'working'
-                    ? '正在翻译姓名和职位…'
-                    : translationState === 'done'
-                      ? '已自动翻译'
-                      : '部分内容翻译失败，请手动检查'}
-              </output>
-            </div>
-            <NativeSelect
-              id="template"
-              className="w-full"
-              value={template}
-              onChange={(event) =>
-                void switchTemplate(event.target.value as Template)
-              }
-            >
-              <NativeSelectOption value="chinese">中文模板</NativeSelectOption>
-              <NativeSelectOption value="english">英文模板</NativeSelectOption>
-            </NativeSelect>
-          </div>
+        <div className="workspace-content">
+          <div className="workspace-grid grid gap-5 px-6 py-6 lg:grid-cols-2">
+            <section className="editor-panel">
+              <div className="mb-4">
+                <h1 className="text-2xl font-semibold tracking-[-0.025em]">
+                  自动生成名片
+                </h1>
+                <p className="mt-2 text-sm leading-6 text-[#697386]">
+                  输入信息后，模板将自动同步。也可以粘贴整段信息进行识别。
+                </p>
+              </div>
 
-          <div className="mt-4">
-            <Textarea
-              aria-label="智能识别"
-              value={bulk}
-              onChange={(event) => recognize(event.target.value)}
-              placeholder={
-                '智能识别：输入或粘贴姓名、职位、电话和邮箱\n支持用换行或逗号分隔，将自动填入下方'
-              }
-              className="min-h-36 resize-none rounded-2xl border-2 border-[#afc0e2] bg-[#f4f7ff] px-5 py-4 text-base leading-7 shadow-[0_10px_28px_rgba(23,66,143,0.08)]"
-            />
-          </div>
+              <div className="space-y-2">
+                <div className="flex min-h-5 items-center justify-between gap-3">
+                  <Label htmlFor="template">模板</Label>
+                  <output
+                    className={`flex items-center gap-1.5 text-right text-xs ${
+                      translationState === 'error'
+                        ? 'text-[#b4232f]'
+                        : 'text-[#697386]'
+                    }`}
+                  >
+                    {translationState === 'working' ? (
+                      <LoaderCircle className="size-3.5 animate-spin" />
+                    ) : translationState === 'done' ? (
+                      <Check className="size-3.5" />
+                    ) : null}
+                    {translationState === 'idle'
+                      ? '姓名和职位由 MyMemory 自动翻译'
+                      : translationState === 'working'
+                        ? '正在翻译姓名和职位…'
+                        : translationState === 'done'
+                          ? '已自动翻译'
+                          : '部分内容翻译失败，请手动检查'}
+                  </output>
+                </div>
+                <NativeSelect
+                  id="template"
+                  className="w-full"
+                  value={template}
+                  onChange={(event) =>
+                    void switchTemplate(event.target.value as Template)
+                  }
+                >
+                  <NativeSelectOption value="chinese">
+                    中文模板
+                  </NativeSelectOption>
+                  <NativeSelectOption value="english">
+                    英文模板
+                  </NativeSelectOption>
+                </NativeSelect>
+              </div>
 
-          <div className="my-4 h-px bg-[#e5e9f0]" />
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {(
-              [
-                ['name', '名字'],
-                ['title', '职位'],
-                ['phone', '电话'],
-                ['email', '邮箱'],
-              ] as const
-            ).map(([field, label]) => (
-              <div key={field} className="space-y-2">
-                <Label htmlFor={field}>{label}</Label>
-                <Input
-                  id={field}
-                  value={data[field]}
-                  placeholder={defaults[template][field]}
-                  onChange={(event) => update(field, event.target.value)}
-                  className="h-10 bg-white"
+              <div className="mt-4">
+                <Textarea
+                  aria-label="智能识别"
+                  value={bulk}
+                  onChange={(event) => recognize(event.target.value)}
+                  placeholder={
+                    '智能识别：输入或粘贴姓名、职位、电话和邮箱\n支持用换行或逗号分隔，将自动填入下方'
+                  }
+                  className="min-h-36 resize-none rounded-2xl border-2 border-[#afc0e2] bg-[#f4f7ff] px-5 py-4 text-base leading-7 shadow-[0_10px_28px_rgba(23,66,143,0.08)]"
                 />
               </div>
-            ))}
-          </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <Button
-              type="button"
-              className="h-11 bg-[#17428f] text-white"
-              onClick={exportPdf}
-              disabled={isExporting}
-            >
-              {exportState === 'pdf-working' ? (
-                <LoaderCircle className="size-4 animate-spin" />
-              ) : exportState === 'pdf-done' ? (
-                <Check className="size-4" />
-              ) : (
-                <Download className="size-4" />
-              )}
-              {exportState === 'pdf-working'
-                ? '正在生成…'
-                : exportState === 'pdf-done'
-                  ? '已下载'
-                  : '矢量 PDF 下载'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11 bg-white"
-              onClick={exportPng}
-              disabled={isExporting}
-            >
-              {exportState === 'png-working' ? (
-                <LoaderCircle className="size-4 animate-spin" />
-              ) : exportState === 'png-done' ? (
-                <Check className="size-4" />
-              ) : (
-                <Download className="size-4" />
-              )}
-              {exportState === 'png-working'
-                ? '正在生成…'
-                : exportState === 'png-done'
-                  ? '已下载'
-                  : 'PNG下载'}
-            </Button>
-          </div>
-          {exportState === 'error' && (
-            <p className="mt-2 text-center text-xs text-[#b4232f]">
-              生成失败，请刷新页面后重试。
-            </p>
-          )}
-          <p className="mt-2 text-center text-xs leading-5 text-[#697386]">
-            PDF 全部转曲且不含位图；PNG 为 3.2 倍高清输出
-            <br />
-            下载时会弹出保存位置选择（不支持时按浏览器设置下载）
-          </p>
-        </section>
+              <div className="my-4 h-px bg-[#e5e9f0]" />
 
-        <section className="preview-panel">
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-semibold">{templateLabel}</h2>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-[#697386]">
-              <FileText className="size-4" />
-              完整名片 · 转曲 PDF / 高清 PNG
-            </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {(
+                  [
+                    ['name', '名字'],
+                    ['title', '职位'],
+                    ['phone', '电话'],
+                    ['email', '邮箱'],
+                  ] as const
+                ).map(([field, label]) => (
+                  <div key={field} className="space-y-2">
+                    <Label htmlFor={field}>{label}</Label>
+                    <Input
+                      id={field}
+                      value={data[field]}
+                      placeholder={defaults[template][field]}
+                      onChange={(event) => update(field, event.target.value)}
+                      className="h-10 bg-white"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <Button
+                  type="button"
+                  className="h-11 bg-[#17428f] text-white"
+                  onClick={exportPdf}
+                  disabled={isExporting}
+                >
+                  {exportState === 'pdf-working' ? (
+                    <LoaderCircle className="size-4 animate-spin" />
+                  ) : exportState === 'pdf-done' ? (
+                    <Check className="size-4" />
+                  ) : (
+                    <Download className="size-4" />
+                  )}
+                  {exportState === 'pdf-working'
+                    ? '正在生成…'
+                    : exportState === 'pdf-done'
+                      ? '已下载'
+                      : '矢量 PDF 下载'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 bg-white"
+                  onClick={exportPng}
+                  disabled={isExporting}
+                >
+                  {exportState === 'png-working' ? (
+                    <LoaderCircle className="size-4 animate-spin" />
+                  ) : exportState === 'png-done' ? (
+                    <Check className="size-4" />
+                  ) : (
+                    <Download className="size-4" />
+                  )}
+                  {exportState === 'png-working'
+                    ? '正在生成…'
+                    : exportState === 'png-done'
+                      ? '已下载'
+                      : 'PNG下载'}
+                </Button>
+              </div>
+              {exportState === 'error' && (
+                <p className="mt-2 text-center text-xs text-[#b4232f]">
+                  生成失败，请刷新页面后重试。
+                </p>
+              )}
+              <p className="mt-2 text-center text-xs leading-5 text-[#697386]">
+                PDF 全部转曲且不含位图；PNG 为 3.2 倍高清输出
+                <br />
+                下载时会弹出保存位置选择（不支持时按浏览器设置下载）
+              </p>
+            </section>
+
+            <section className="preview-panel">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold">{templateLabel}</h2>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-[#697386]">
+                  <FileText className="size-4" />
+                  完整名片 · 转曲 PDF / 高清 PNG
+                </div>
+              </div>
+              <div className="preview-stage">
+                <div className="preview-item">
+                  <BusinessCard template={template} data={data} />
+                </div>
+              </div>
+            </section>
           </div>
-          <div className="preview-stage">
-            <div className="preview-item">
-              <BusinessCard template={template} data={data} />
-            </div>
-          </div>
-        </section>
+        </div>
       </div>
 
       <div className="export-rack" aria-hidden="true">

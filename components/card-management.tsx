@@ -350,7 +350,7 @@ export const CardManagement = forwardRef<
       pending.document !== documentId.current
     )
       return;
-    setSaveStatus('正在保存…');
+    setSaveStatus('正在保存编辑…');
     try {
       await save(
         pending.fields,
@@ -364,7 +364,7 @@ export const CardManagement = forwardRef<
         pending.document === documentId.current &&
         pending.edit === latestEdit.current
       )
-        setSaveStatus('已自动保存到历史记录');
+        setSaveStatus('编辑已保存 · 下载 PDF/PNG 后生成历史版本');
     } catch (error) {
       if (
         pending.document !== documentId.current ||
@@ -372,8 +372,8 @@ export const CardManagement = forwardRef<
       )
         return;
       draft.current ||= pending;
-      setSaveStatus('自动保存失败，请重试');
-      setMessage(error instanceof Error ? error.message : '自动保存失败');
+      setSaveStatus('编辑保存失败，请重试');
+      setMessage(error instanceof Error ? error.message : '编辑保存失败');
     }
   }
   flushRef.current = flushDraft;
@@ -388,7 +388,7 @@ export const CardManagement = forwardRef<
       document: documentId.current,
       edit: editRevision,
     };
-    setSaveStatus('等待自动保存…');
+    setSaveStatus('编辑待保存 · 下载 PDF/PNG 后生成历史版本');
     if (draftTimer.current) clearTimeout(draftTimer.current);
     draftTimer.current = setTimeout(() => void flushRef.current(), 900);
   }, [editRevision, translating, access.manager, current, template]);
@@ -428,7 +428,8 @@ export const CardManagement = forwardRef<
               '下载期间内容已变化，已保留最新编辑；请重新下载以关联当前版本。',
             );
           await save(fields, chosenTemplate, kind, row, actor);
-          setMessage('下载记录已保存。');
+          setSaveStatus('已下载并保存为历史版本');
+          setMessage('已下载并保存为历史版本。');
         } catch (e) {
           setMessage(
             `文件已下载，历史记录未保存：${e instanceof Error ? e.message : '请重试'}`,
@@ -458,6 +459,7 @@ export const CardManagement = forwardRef<
       .from('card_events')
       .select('id,action,created_at,snapshot')
       .eq('record_id', row.id)
+      .in('action', ['pdf', 'png'])
       .order('created_at', { ascending: false })
       .limit(100);
     if (error) throw new Error('历史记录读取失败。');
@@ -895,7 +897,7 @@ export const CardManagement = forwardRef<
               {history.length > 0 && (
                 <div className="rounded-xl border bg-white p-4">
                   <h2 className="mb-3 text-lg font-semibold">
-                    历史版本（最近 100 条）
+                    历史版本（最近 100 个下载版本）
                   </h2>
                   {history.map((item) => (
                     <div
@@ -906,11 +908,8 @@ export const CardManagement = forwardRef<
                         {new Date(item.created_at).toLocaleString()} ·{' '}
                         {(
                           {
-                            import: '导入',
-                            edit: '编辑',
                             pdf: 'PDF 下载',
                             png: 'PNG 下载',
-                            create: '新建',
                           } as Record<string, string>
                         )[item.action] ?? item.action}{' '}
                         · {item.snapshot.name} / {item.snapshot.title}
@@ -925,7 +924,9 @@ export const CardManagement = forwardRef<
                           onUse(item.snapshot, item.snapshot.template);
                           window.location.hash = '';
                           setHistory([]);
-                          setMessage('已从历史版本载入，保存时将建立新记录。');
+                          setMessage(
+                            '已载入历史版本；下载 PDF/PNG 后将保存为新版本。',
+                          );
                         }}
                       >
                         使用此版本制作
