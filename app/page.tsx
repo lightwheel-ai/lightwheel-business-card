@@ -8,7 +8,7 @@ import {
   ContactRound,
   Download,
   FileText,
-  Home,
+  Home as HomeIcon,
   LoaderCircle,
 } from 'lucide-react';
 
@@ -535,7 +535,7 @@ export default function Home() {
               window.location.hash = '';
             }}
           >
-            <Home aria-hidden="true" />
+            <HomeIcon aria-hidden="true" />
             <span>名片制作</span>
           </button>
           <button
