@@ -265,6 +265,25 @@ body [data-slot='dialog-content'] img {
   position: relative;
   cursor: pointer;
 }
+.source-text-layer {
+  pointer-events: none;
+}
+.source-text-line {
+  position: absolute;
+  display: block;
+  color: transparent;
+  font-family: Arial, sans-serif;
+  line-height: 1;
+  white-space: pre;
+  transform-origin: left top;
+  pointer-events: auto;
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.source-text-line::selection {
+  background: rgb(59 130 246 / 30%);
+}
 .instant-hint:is(:hover, :focus-visible)::after {
   content: attr(data-hint);
   position: absolute;

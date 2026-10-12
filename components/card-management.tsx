@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { supabase } from '@/lib/supabase';
 import { CardImport } from '@/components/card-import';
+import { SelectableSourceImage } from '@/components/selectable-source-image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -1182,10 +1183,9 @@ export const CardManagement = forwardRef<
               </p>
               {reviewImageStatus && <p role="status">{reviewImageStatus}</p>}
               {reviewImage && (
-                <img
+                <SelectableSourceImage
+                  key={`${editing?.id}:${reviewImage}`}
                   src={reviewImage}
-                  alt="核对用名片原图"
-                  className="mx-auto max-h-[65svh] max-w-full bg-white object-contain shadow-md"
                   onError={() => {
                     setReviewImage('');
                     setReviewImageStatus(
