@@ -261,6 +261,20 @@ body [data-slot='dialog-content'] {
 body [data-slot='dialog-content'] img {
   border: none !important;
 }
+body [data-slot='tooltip-content'] {
+  background-color: #fff;
+  animation: none !important;
+}
+body [data-slot='tooltip-content'][data-open] {
+  opacity: 1 !important;
+}
+body [data-slot='tooltip-content'][data-closed] {
+  visibility: hidden;
+}
+body [data-slot='tooltip-content'] > :last-child {
+  background-color: #fff;
+  fill: #fff;
+}
 .instant-hint {
   position: relative;
   cursor: pointer;
