@@ -43,24 +43,24 @@
 }
 
 :root {
-  --background: #faf9fc;
-  --foreground: #292532;
+  --background: #f7f8fa;
+  --foreground: #26272b;
   --card: #fff;
-  --card-foreground: #172033;
+  --card-foreground: #26272b;
   --popover: #fff;
-  --popover-foreground: #172033;
+  --popover-foreground: #26272b;
   --primary: #7653d6;
   --primary-foreground: #fff;
-  --secondary: #f0ebfb;
-  --secondary-foreground: #6949b4;
-  --muted: #f6f3fa;
+  --secondary: #f3f4f6;
+  --secondary-foreground: #42454d;
+  --muted: #f4f5f7;
   --muted-foreground: #697386;
-  --accent: #f0ebfb;
-  --accent-foreground: #6949b4;
+  --accent: #f1f2f4;
+  --accent-foreground: #26272b;
   --destructive: #c83f49;
   --border: #dfe4ec;
   --input: #ccd3de;
-  --ring: #9277dd;
+  --ring: #c3c4cb;
   --radius: 0.75rem;
 }
 
@@ -247,10 +247,21 @@ body
 }
 body
   :where(input:not([type='checkbox']):not([type='radio']), textarea, select) {
-  background-color: #f4f1f8;
+  background-color: #f3f4f6;
 }
 body :where(button, input, textarea, select):focus-visible {
-  background-color: #eee7fb;
+  background-color: #ebedf0;
+}
+body button.bg-primary:focus-visible {
+  background-color: var(--primary);
+}
+body button.export-secondary-button {
+  border: 1px solid var(--primary) !important;
+  background-color: #fff;
+  color: var(--primary);
+}
+body button.export-secondary-button:is(:hover, :focus-visible) {
+  background-color: var(--accent);
 }
 body tr:nth-child(even) {
   background-color: #f7f9fc;
@@ -260,6 +271,12 @@ body [data-slot='dialog-content'] {
 }
 body [data-slot='dialog-content'] img {
   border: none !important;
+}
+body [data-slot='progress-track'] {
+  background-color: #eceef1;
+}
+body [data-slot='progress-indicator'] {
+  background-color: #858892;
 }
 body [data-slot='tooltip-content'] {
   background-color: #fff;
@@ -301,7 +318,7 @@ body [data-slot='tooltip-content'] > :last-child {
   width: 14px;
   height: 14px;
   flex: none;
-  color: #9a92a8;
+  color: #92949c;
 }
 .record-action:is(:hover, :focus-visible) {
   background: var(--accent);

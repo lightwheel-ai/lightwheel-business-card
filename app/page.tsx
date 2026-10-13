@@ -615,7 +615,7 @@ export default function Home() {
                   placeholder={
                     '智能识别：输入或粘贴姓名、职位、电话和邮箱\n支持用换行或逗号分隔，将自动填入下方'
                   }
-                  className="min-h-36 resize-none rounded-2xl bg-accent px-5 py-4 text-base leading-7 shadow-[0_10px_28px_rgba(118,83,214,0.06)]"
+                  className="min-h-36 resize-none rounded-2xl bg-accent px-5 py-4 text-base leading-7"
                 />
               </div>
 
@@ -665,8 +665,8 @@ export default function Home() {
                 </Button>
                 <Button
                   type="button"
-                  variant="secondary"
-                  className="h-11"
+                  variant="outline"
+                  className="export-secondary-button h-11"
                   onClick={exportPng}
                   disabled={isExporting}
                 >
