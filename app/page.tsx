@@ -518,9 +518,9 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="app-shell">
-        <div className="workspace-content">
-          <div className="workspace-grid grid gap-5 px-6 py-6 lg:grid-cols-2">
+      <div className="app-shell px-5 sm:px-8">
+        <div className="workspace-content mx-auto max-w-7xl">
+          <div className="workspace-grid grid gap-5 py-6 lg:grid-cols-2">
             <section className="editor-panel">
               <div className="mb-4">
                 <h1 className="text-2xl font-semibold tracking-[-0.025em]">

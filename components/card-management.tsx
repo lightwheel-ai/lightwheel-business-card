@@ -75,7 +75,7 @@ export const CardManagement = forwardRef<
     onUse: (data: Fields, template: Template) => void;
   }
 >(function CardManagement(
-  { template, current, editRevision, translating, onUse },
+  { template, current: _current, editRevision, translating, onUse },
   ref,
 ) {
   const [login, setLogin] = useState(false);
@@ -114,7 +114,6 @@ export const CardManagement = forwardRef<
     document: number;
     edit: number;
   } | null>(null);
-  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const observedEdit = useRef(editRevision);
   const latestEdit = useRef(editRevision);
   latestEdit.current = editRevision;
@@ -375,77 +374,15 @@ export const CardManagement = forwardRef<
       pendingSave.current = false;
     }
   }
-  async function flushDraft() {
-    if (draftTimer.current) clearTimeout(draftTimer.current);
-    const pending = draft.current;
-    if (!pending) {
-      await saveQueue.current;
-      return;
-    }
-    draft.current = null;
-    if (
-      pending.actor !== identity.current ||
-      pending.document !== documentId.current
-    )
-      return;
-    setSaveStatus('正在保存编辑…');
-    try {
-      await save(
-        pending.fields,
-        pending.template,
-        'edit',
-        selected.current,
-        pending.actor,
-      );
-      if (
-        !draft.current &&
-        pending.document === documentId.current &&
-        pending.edit === latestEdit.current
-      )
-        setSaveStatus('编辑已保存 · 下载 PDF/PNG 后生成历史版本');
-    } catch (error) {
-      if (
-        pending.document !== documentId.current ||
-        pending.edit !== latestEdit.current
-      )
-        return;
-      draft.current ||= pending;
-      setSaveStatus('编辑保存失败，请重试');
-      setMessage(error instanceof Error ? error.message : '编辑保存失败');
-    }
-  }
-  flushRef.current = flushDraft;
+  // 制作页只在下载完成后写入记录；导航和查看历史仅等待已有下载保存。
+  flushRef.current = async () => {
+    await saveQueue.current;
+  };
   useEffect(() => {
     if (translating || editRevision === observedEdit.current) return;
     observedEdit.current = editRevision;
-    if (!access.manager || !identity.current) return;
-    draft.current = {
-      fields: { ...current },
-      template,
-      actor: identity.current,
-      document: documentId.current,
-      edit: editRevision,
-    };
-    setSaveStatus('编辑待保存 · 下载 PDF/PNG 后生成历史版本');
-    if (draftTimer.current) clearTimeout(draftTimer.current);
-    draftTimer.current = setTimeout(() => void flushRef.current(), 900);
-  }, [editRevision, translating, access.manager, current, template]);
-  useEffect(() => {
-    const leaving = (e: BeforeUnloadEvent) => {
-      if (draft.current || pendingSave.current) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    const retry = () => void flushRef.current();
-    window.addEventListener('beforeunload', leaving);
-    window.addEventListener('online', retry);
-    return () => {
-      window.removeEventListener('beforeunload', leaving);
-      window.removeEventListener('online', retry);
-      if (draftTimer.current) clearTimeout(draftTimer.current);
-    };
-  }, []);
+    setSaveStatus(access.manager ? '当前编辑尚未计入记录，下载后保存' : '');
+  }, [editRevision, translating, access.manager]);
   useImperativeHandle(ref, () => ({
     prepareDownload() {
       const exportDocument = documentId.current;
@@ -523,7 +460,7 @@ export const CardManagement = forwardRef<
             {saveStatus.includes('失败') && (
               <button
                 className="ml-2 underline"
-                onClick={() => void flushDraft()}
+                onClick={() => void flushRef.current()}
               >
                 重试
               </button>
@@ -566,7 +503,7 @@ export const CardManagement = forwardRef<
           {saveStatus.includes('失败') && (
             <button
               className="ml-3 underline"
-              onClick={() => void flushDraft()}
+              onClick={() => void flushRef.current()}
             >
               重试保存
             </button>
@@ -1031,9 +968,7 @@ export const CardManagement = forwardRef<
                           window.location.hash = '';
                           setHistory([]);
                           setHistoryOpen(false);
-                          setMessage(
-                            '已载入历史版本；下载 PDF/PNG 后将保存为新版本。',
-                          );
+                          setMessage('已载入历史版本；下载后将保存为新版本。');
                         }}
                       >
                         使用此版本制作
@@ -1152,9 +1087,12 @@ export const CardManagement = forwardRef<
           if (!open) setSource(null);
         }}
       >
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-auto">
+        <DialogContent className="w-fit sm:max-w-[calc(100vw-2rem)] max-h-[90svh] overflow-auto">
           <DialogTitle>来源图片预览</DialogTitle>
-          <DialogDescription className="break-all">
+          <DialogDescription
+            className="break-all min-w-0"
+            style={{ maxWidth: 'min(70vw, 32rem)' }}
+          >
             {source?.source === 'manual'
               ? '手动制作的名片没有导入原图。'
               : source?.source}
@@ -1279,14 +1217,8 @@ export const CardManagement = forwardRef<
       >
         <DialogContent className="review-dialog w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[90svh] overflow-y-auto">
           <DialogTitle>编辑并核对名片</DialogTitle>
-          <DialogDescription>
-            确认识别内容无误后保存，历史版本会保留。
-          </DialogDescription>
           <div className="grid min-w-0 gap-6 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
             <div className="min-w-0 rounded-xl bg-slate-100 p-4 md:sticky md:top-0 md:self-start">
-              <p className="mb-3 text-sm text-slate-600">
-                原始名片 · 对照右侧修改信息
-              </p>
               {reviewImageStatus && <p role="status">{reviewImageStatus}</p>}
               {reviewImage && (
                 <SelectableSourceImage
