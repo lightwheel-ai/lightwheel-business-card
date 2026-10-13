@@ -3,14 +3,7 @@
 
 import { type Ref, useEffect, useMemo, useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
-import {
-  Check,
-  ContactRound,
-  Download,
-  FileText,
-  Home as HomeIcon,
-  LoaderCircle,
-} from 'lucide-react';
+import { Check, Download, LoaderCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -526,34 +519,6 @@ export default function Home() {
       </header>
 
       <div className="app-shell">
-        <aside className="workspace-sidebar" aria-label="主导航">
-          <div className="sidebar-caption">工作台</div>
-          <button
-            type="button"
-            className="sidebar-link is-active"
-            onClick={() => {
-              window.location.hash = '';
-            }}
-          >
-            <HomeIcon aria-hidden="true" />
-            <span>名片制作</span>
-          </button>
-          <button
-            type="button"
-            className="sidebar-link"
-            onClick={() => {
-              window.location.hash = '#records';
-            }}
-          >
-            <ContactRound aria-hidden="true" />
-            <span>团队名片</span>
-          </button>
-          <div className="sidebar-brand">
-            <img src={assetUrl('/lightwheel.svg')} alt="" />
-            <span>Business Card Studio</span>
-          </div>
-        </aside>
-
         <div className="workspace-content">
           <div className="workspace-grid grid gap-5 px-6 py-6 lg:grid-cols-2">
             <section className="editor-panel">
@@ -582,7 +547,7 @@ export default function Home() {
                       <Check className="size-3.5" />
                     ) : null}
                     {translationState === 'idle'
-                      ? '姓名和职位由 MyMemory 自动翻译'
+                      ? ''
                       : translationState === 'working'
                         ? '正在翻译姓名和职位…'
                         : translationState === 'done'
@@ -700,10 +665,6 @@ export default function Home() {
               <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold">{templateLabel}</h2>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-[#697386]">
-                  <FileText className="size-4" />
-                  完整名片 · 转曲 PDF / 高清 PNG
                 </div>
               </div>
               <div className="preview-stage">

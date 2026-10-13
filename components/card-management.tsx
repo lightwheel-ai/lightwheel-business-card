@@ -95,6 +95,9 @@ export const CardManagement = forwardRef<
   const [records, setRecords] = useState<RecordRow[]>([]);
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [history, setHistory] = useState<HistoryRow[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState('');
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState('');
   const recordsPanel = useRef<HTMLDivElement>(null);
@@ -489,16 +492,27 @@ export const CardManagement = forwardRef<
     setMessage('已载入记录，可修改后重新下载。');
   }
   async function loadHistory(row: RecordRow) {
-    await flushRef.current();
-    const { data, error } = await supabase
-      .from('card_events')
-      .select('id,action,created_at,snapshot')
-      .eq('record_id', row.id)
-      .in('action', ['pdf', 'png'])
-      .order('created_at', { ascending: false })
-      .limit(100);
-    if (error) throw new Error('历史记录读取失败。');
-    setHistory(data ?? []);
+    setHistory([]);
+    setHistoryOpen(true);
+    setHistoryLoading(true);
+    setHistoryError('');
+    try {
+      await flushRef.current();
+      const { data, error } = await supabase
+        .from('card_events')
+        .select('id,action,created_at,snapshot')
+        .eq('record_id', row.id)
+        .in('action', ['pdf', 'png'])
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw new Error('历史记录读取失败。');
+      setHistory(data ?? []);
+    } catch (error) {
+      setHistoryError('历史版本读取失败，请关闭后重试。');
+      throw error;
+    } finally {
+      setHistoryLoading(false);
+    }
   }
   return (
     <TooltipProvider delay={0}>
@@ -756,16 +770,43 @@ export const CardManagement = forwardRef<
         className="fixed inset-0 z-30 overflow-auto bg-[#f3f5f8] p-5 pb-52 sm:p-8 sm:pb-52"
       >
         <div className="mx-auto max-w-7xl space-y-5">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-2xl font-semibold">团队名片记录</h1>
-            <Button
-              variant="outline"
-              onClick={() => {
-                window.location.hash = '';
-              }}
-            >
-              返回制作页
-            </Button>
+            <div className="flex items-start gap-3">
+              {access.manager && (
+                <CardImport
+                  template={template}
+                  onSaved={() => setRevision((n) => n + 1)}
+                  visible={true}
+                  onViewRecords={() => {
+                    window.location.hash = '#records';
+                    setScreen(true);
+                    setSearch('');
+                    setPage(0);
+                    setRevision((n) => n + 1);
+                    setLogin(false);
+                    setEditing(null);
+                    setSource(null);
+                    setDeleting(null);
+                    requestAnimationFrame(() => {
+                      recordsPanel.current?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start',
+                      });
+                      recordsPanel.current?.focus({ preventScroll: true });
+                    });
+                  }}
+                />
+              )}
+              <Button
+                variant="outline"
+                onClick={() => {
+                  window.location.hash = '';
+                }}
+              >
+                返回制作页
+              </Button>
+            </div>
           </div>
           {!access.manager ? (
             <div className="rounded-xl bg-white p-6">
@@ -790,38 +831,15 @@ export const CardManagement = forwardRef<
             </div>
           ) : (
             <>
-              <CardImport
-                template={template}
-                onSaved={() => setRevision((n) => n + 1)}
-                visible={true}
-                onViewRecords={() => {
-                  window.location.hash = '#records';
-                  setScreen(true);
-                  setSearch('');
-                  setPage(0);
-                  setRevision((n) => n + 1);
-                  setLogin(false);
-                  setEditing(null);
-                  setSource(null);
-                  setDeleting(null);
-                  requestAnimationFrame(() => {
-                    recordsPanel.current?.scrollIntoView({
-                      behavior: 'smooth',
-                      block: 'start',
-                    });
-                    recordsPanel.current?.focus({ preventScroll: true });
-                  });
-                }}
-              />
               <div
                 ref={recordsPanel}
                 tabIndex={-1}
                 className="rounded-xl border bg-white p-4"
               >
-                <label className="mb-4 flex max-w-md items-center gap-3">
-                  <span className="whitespace-nowrap">搜索姓名</span>
+                <div className="mb-4 flex max-w-md items-center gap-3">
                   <Input
                     type="search"
+                    aria-label="搜索姓名"
                     value={search}
                     placeholder="输入姓名搜索全部记录"
                     onChange={(e) => {
@@ -829,7 +847,7 @@ export const CardManagement = forwardRef<
                       setPage(0);
                     }}
                   />
-                </label>
+                </div>
                 {loading ? (
                   <output>正在加载…</output>
                 ) : (
@@ -974,11 +992,19 @@ export const CardManagement = forwardRef<
                   </Button>
                 </div>
               </div>
-              {history.length > 0 && (
-                <div className="rounded-xl border bg-white p-4">
-                  <h2 className="mb-3 text-lg font-semibold">
-                    历史版本（最近 100 个下载版本）
-                  </h2>
+              <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+                <DialogContent className="sm:max-w-2xl max-h-[80svh] overflow-y-auto">
+                  <DialogTitle>历史版本（最近 100 个下载版本）</DialogTitle>
+                  <DialogDescription>
+                    仅保留下载 PDF 或 PNG 时生成的版本。
+                  </DialogDescription>
+                  {historyLoading ? (
+                    <output>正在加载历史版本…</output>
+                  ) : historyError ? (
+                    <p role="alert">{historyError}</p>
+                  ) : (
+                    !history.length && <p>暂无下载版本。</p>
+                  )}
                   {history.map((item) => (
                     <div
                       key={item.id}
@@ -1004,6 +1030,7 @@ export const CardManagement = forwardRef<
                           onUse(item.snapshot, item.snapshot.template);
                           window.location.hash = '';
                           setHistory([]);
+                          setHistoryOpen(false);
                           setMessage(
                             '已载入历史版本；下载 PDF/PNG 后将保存为新版本。',
                           );
@@ -1013,8 +1040,8 @@ export const CardManagement = forwardRef<
                       </Button>
                     </div>
                   ))}
-                </div>
-              )}
+                </DialogContent>
+              </Dialog>
               {access.owner && (
                 <div className="rounded-xl border bg-white p-4">
                   <h2 className="mb-3 text-lg font-semibold">
@@ -1250,7 +1277,7 @@ export const CardManagement = forwardRef<
           if (!open) setEditing(null);
         }}
       >
-        <DialogContent className="review-dialog w-[calc(100vw-2rem)] sm:max-w-6xl max-h-[90svh] overflow-y-auto">
+        <DialogContent className="review-dialog w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[90svh] overflow-y-auto">
           <DialogTitle>编辑并核对名片</DialogTitle>
           <DialogDescription>
             确认识别内容无误后保存，历史版本会保留。

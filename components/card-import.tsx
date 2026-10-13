@@ -127,10 +127,7 @@ export function CardImport({
   ).length;
   return (
     <>
-      <div
-        hidden={!visible}
-        className="space-y-3 rounded-xl border bg-white p-4"
-      >
+      <div hidden={!visible} className="space-y-3">
         <Button disabled={running} onClick={() => input.current?.click()}>
           {running ? '正在导入…' : '导入名片'}
         </Button>
