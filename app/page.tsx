@@ -485,7 +485,7 @@ export default function Home() {
   }
 
   return (
-    <main className="app-root min-h-screen bg-[#f7f8fa] text-[#172033]">
+    <main className="app-root min-h-screen bg-background text-foreground">
       <header className="app-header bg-white">
         <div className="flex h-16 items-center justify-between px-6">
           <div className="flex items-center gap-4">
@@ -615,7 +615,7 @@ export default function Home() {
                   placeholder={
                     '智能识别：输入或粘贴姓名、职位、电话和邮箱\n支持用换行或逗号分隔，将自动填入下方'
                   }
-                  className="min-h-36 resize-none rounded-2xl border-2 border-[#afc0e2] bg-[#f4f7ff] px-5 py-4 text-base leading-7 shadow-[0_10px_28px_rgba(23,66,143,0.08)]"
+                  className="min-h-36 resize-none rounded-2xl bg-accent px-5 py-4 text-base leading-7 shadow-[0_10px_28px_rgba(118,83,214,0.06)]"
                 />
               </div>
 
@@ -646,7 +646,7 @@ export default function Home() {
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <Button
                   type="button"
-                  className="h-11 bg-[#17428f] text-white"
+                  className="h-11"
                   onClick={exportPdf}
                   disabled={isExporting}
                 >
@@ -665,8 +665,8 @@ export default function Home() {
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
-                  className="h-11 bg-white"
+                  variant="secondary"
+                  className="h-11"
                   onClick={exportPng}
                   disabled={isExporting}
                 >

@@ -43,24 +43,24 @@
 }
 
 :root {
-  --background: #f3f5f8;
-  --foreground: #172033;
+  --background: #faf9fc;
+  --foreground: #292532;
   --card: #fff;
   --card-foreground: #172033;
   --popover: #fff;
   --popover-foreground: #172033;
-  --primary: #17428f;
+  --primary: #7653d6;
   --primary-foreground: #fff;
-  --secondary: #eef3ff;
-  --secondary-foreground: #17428f;
-  --muted: #f3f5f8;
+  --secondary: #f0ebfb;
+  --secondary-foreground: #6949b4;
+  --muted: #f6f3fa;
   --muted-foreground: #697386;
-  --accent: #eef3ff;
-  --accent-foreground: #17428f;
+  --accent: #f0ebfb;
+  --accent-foreground: #6949b4;
   --destructive: #c83f49;
   --border: #dfe4ec;
   --input: #ccd3de;
-  --ring: #315dab;
+  --ring: #9277dd;
   --radius: 0.75rem;
 }
 
@@ -247,10 +247,10 @@ body
 }
 body
   :where(input:not([type='checkbox']):not([type='radio']), textarea, select) {
-  background-color: #f1f4f8;
+  background-color: #f4f1f8;
 }
 body :where(button, input, textarea, select):focus-visible {
-  background-color: #e3ecfc;
+  background-color: #eee7fb;
 }
 body tr:nth-child(even) {
   background-color: #f7f9fc;
@@ -267,6 +267,34 @@ body [data-slot='dialog-content'] img {
 }
 .source-text-layer {
   pointer-events: none;
+}
+.record-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 8px;
+  margin-left: -8px;
+  border-radius: 8px;
+  color: var(--foreground);
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+.record-action svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: #9a92a8;
+}
+.record-action:is(:hover, :focus-visible) {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.record-action:is(:hover, :focus-visible) svg {
+  color: currentColor;
 }
 .source-text-line {
   position: absolute;
@@ -339,7 +367,9 @@ body [data-slot='dialog-content'] img {
   color: #30343b;
   cursor: pointer;
   text-align: left;
-  transition: background-color 140ms ease, color 140ms ease;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
 }
 .sidebar-link + .sidebar-link {
   margin-top: 4px;
@@ -351,8 +381,8 @@ body [data-slot='dialog-content'] img {
 }
 .sidebar-link:hover,
 .sidebar-link.is-active {
-  background: #f1f2f4;
-  color: #1c2027;
+  background: var(--accent);
+  color: var(--accent-foreground);
 }
 .sidebar-brand {
   display: flex;

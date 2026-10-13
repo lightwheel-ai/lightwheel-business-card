@@ -10,33 +10,41 @@ const textCache = new Map<string, ImageText>();
 
 export function SelectableSourceImage({
   src,
+  template,
   onError,
 }: {
   src: string;
+  template: 'chinese' | 'english';
   onError: () => void;
 }) {
-  const key = new URL(src).origin + new URL(src).pathname;
+  const key = new URL(src).origin + new URL(src).pathname + ':' + template;
   const [result, setResult] = useState<ImageText | undefined>(() =>
     textCache.get(key),
   );
   const [status, setStatus] = useState(() =>
-    textCache.has(key) ? '' : '正在准备可复制文字…',
+    textCache.has(key) ? '' : '启用后可拖选图片文字并复制',
   );
   const [retry, setRetry] = useState(0);
   const [failed, setFailed] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [requested, setRequested] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
     // Signed URL tokens change on reopening; the source object remains the same.
     const cached = textCache.get(key);
-    if (cached) {
+    if (cached || !requested) {
       return () => controller.abort();
     }
     void import('@/lib/source-image-text')
       .then(({ recognizeSourceImage }) => {
         controller.signal.throwIfAborted();
-        return recognizeSourceImage(src, controller.signal, setStatus);
+        return recognizeSourceImage(
+          src,
+          template,
+          controller.signal,
+          setStatus,
+        );
       })
       .then((recognized) => {
         if (controller.signal.aborted) return;
@@ -58,7 +66,7 @@ export function SelectableSourceImage({
         }
       });
     return () => controller.abort();
-  }, [src, key, retry]);
+  }, [src, template, key, retry, requested]);
 
   async function copyAll() {
     if (!result) return;
@@ -74,18 +82,20 @@ export function SelectableSourceImage({
     <>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
         <output>{status || '拖选图片文字，按 ⌘C / Ctrl+C 复制'}</output>
-        {failed ? (
+        {!result ? (
           <Button
             type="button"
             variant="ghost"
             size="sm"
+            disabled={requested && !failed}
             onClick={() => {
               setFailed(false);
+              setRequested(true);
               setStatus('正在准备可复制文字…');
               setRetry((n) => n + 1);
             }}
           >
-            重试识别
+            {failed ? '重试识别' : requested ? '正在识别…' : '启用文字复制'}
           </Button>
         ) : (
           <Button

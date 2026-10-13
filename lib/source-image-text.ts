@@ -14,8 +14,27 @@ export type ImageText = {
   lines: ImageTextLine[];
 };
 
-export async function recognizeSourceImage(
+let queue: Promise<unknown> = Promise.resolve();
+
+export function recognizeSourceImage(
   src: string,
+  template: 'chinese' | 'english',
+  signal: AbortSignal,
+  progress: (message: string) => void,
+): Promise<ImageText> {
+  const task = queue
+    .catch(() => {})
+    .then(() => {
+      signal.throwIfAborted();
+      return recognize(src, template, signal, progress);
+    });
+  queue = task.catch(() => {});
+  return task;
+}
+
+async function recognize(
+  src: string,
+  template: 'chinese' | 'english',
   signal: AbortSignal,
   progress: (message: string) => void,
 ): Promise<ImageText> {
@@ -23,7 +42,7 @@ export async function recognizeSourceImage(
   if (!response.ok) throw new Error('原图读取失败');
   const bitmap = await createImageBitmap(await response.blob());
   const canvas = document.createElement('canvas');
-  const scale = Math.min(2, 2600 / Math.max(bitmap.width, bitmap.height));
+  const scale = Math.min(2, 2000 / Math.max(bitmap.width, bitmap.height));
   canvas.width = Math.round(bitmap.width * scale);
   canvas.height = Math.round(bitmap.height * scale);
   const context = canvas.getContext('2d');
@@ -37,21 +56,38 @@ export async function recognizeSourceImage(
   bitmap.close();
 
   let worker: import('tesseract.js').Worker | undefined;
-  const cancel = () => void worker?.terminate().catch(() => {});
+  let rejectStopped: (reason: unknown) => void = () => {};
+  const stopped = new Promise<never>((_, reject) => {
+    rejectStopped = reject;
+  });
+  void stopped.catch(() => {});
+  const cancel = () => {
+    rejectStopped(new DOMException('识别已停止', 'AbortError'));
+    void worker?.terminate().catch(() => {});
+    canvas.width = 0;
+    canvas.height = 0;
+  };
   signal.addEventListener('abort', cancel, { once: true });
   try {
     signal.throwIfAborted();
     const { createWorker, PSM } = await import('tesseract.js');
-    worker = await createWorker(['eng', 'chi_sim'], 1, {
-      logger: (event) => {
-        if (!signal.aborted && event.status === 'recognizing text') {
-          progress(`正在准备可复制文字 ${Math.round(event.progress * 100)}%`);
-        }
+    worker = await createWorker(
+      template === 'chinese' ? ['eng', 'chi_sim'] : 'eng',
+      1,
+      {
+        logger: (event) => {
+          if (!signal.aborted && event.status === 'recognizing text') {
+            progress(`正在准备可复制文字 ${Math.round(event.progress * 100)}%`);
+          }
+        },
       },
-    });
+    );
     signal.throwIfAborted();
     await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
-    const { data } = await worker.recognize(canvas, {}, { blocks: true });
+    const { data } = await Promise.race([
+      worker.recognize(canvas, {}, { blocks: true }),
+      stopped,
+    ]);
     signal.throwIfAborted();
     const lines = (data.blocks ?? []).flatMap((block) =>
       block.paragraphs.flatMap((paragraph) =>

@@ -6,12 +6,19 @@ import {
   useRef,
   useState,
 } from 'react';
+import { FileImage, PencilLine } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { CardImport } from '@/components/card-import';
 import { SelectableSourceImage } from '@/components/selectable-source-image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
 import {
   Dialog,
   DialogContent,
@@ -78,6 +85,10 @@ export const CardManagement = forwardRef<
   const [busy, setBusy] = useState(false);
   const [user, setUser] = useState<string | null>(null);
   const [access, setAccess] = useState({ owner: false, manager: false });
+  const [accessStatus, setAccessStatus] = useState<
+    'checking' | 'ready' | 'error'
+  >('checking');
+  const lastPermissionCheck = useRef(0);
   const [reason, setReason] = useState('');
   const [message, setMessage] = useState('');
   const [screen, setScreen] = useState(false);
@@ -168,10 +179,18 @@ export const CardManagement = forwardRef<
 
   async function refreshIdentity() {
     const epoch = ++generation.current;
+    lastPermissionCheck.current = Date.now();
+    setAccessStatus('checking');
     const {
       data: { session },
+      error: sessionError,
     } = await supabase.auth.getSession();
     if (epoch !== generation.current) return;
+    if (sessionError) {
+      setAccessStatus('error');
+      setMessage('登录状态暂时无法确认，请检查网络后重试。');
+      return;
+    }
     if (identity.current !== (session?.user.id ?? null)) {
       identity.current = session?.user.id ?? null;
       setAccess({ owner: false, manager: false });
@@ -190,6 +209,10 @@ export const CardManagement = forwardRef<
     }
     setUser(session?.user.email ?? null);
     if (!session) {
+      setAccessStatus('ready');
+      setMessage((current) =>
+        /^(登录状态|管理权限)暂时无法确认/.test(current) ? '' : current,
+      );
       setAccess({ owner: false, manager: false });
       setRecords([]);
       setRequests([]);
@@ -199,17 +222,21 @@ export const CardManagement = forwardRef<
     }
     const { data, error } = await supabase.rpc('card_access');
     if (epoch !== generation.current) return;
-    setAccess(
-      error
-        ? { owner: false, manager: false }
-        : { owner: data?.owner === true, manager: data?.manager === true },
+    if (error) {
+      setAccessStatus('error');
+      setMessage('管理权限暂时无法确认，请检查网络后重试。');
+      return;
+    }
+    setAccessStatus('ready');
+    setMessage((current) =>
+      /^(登录状态|管理权限)暂时无法确认/.test(current) ? '' : current,
     );
-    if (error || !data?.manager) {
+    setAccess({ owner: data?.owner === true, manager: data?.manager === true });
+    if (!data?.manager) {
       setRecords([]);
       setHistory([]);
       selected.current = null;
     }
-    if (error) setMessage('无法读取管理权限，请稍后重试。');
     const result = await supabase
       .from('card_admin_requests')
       .select('user_id,email,reason,status')
@@ -220,10 +247,17 @@ export const CardManagement = forwardRef<
     void refreshIdentity();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'INITIAL_SESSION') return;
       setTimeout(() => void refreshIdentity(), 0);
     });
-    const focus = () => void refreshIdentity();
+    const focus = () => {
+      if (
+        document.visibilityState === 'visible' &&
+        Date.now() - lastPermissionCheck.current > 30_000
+      )
+        void refreshIdentity();
+    };
     const route = () => {
       void flushRef.current();
       setScreen(window.location.hash === '#records');
@@ -467,7 +501,7 @@ export const CardManagement = forwardRef<
     setHistory(data ?? []);
   }
   return (
-    <>
+    <TooltipProvider delay={0}>
       <div className="flex items-center gap-2">
         {access.manager && saveStatus && (
           <span role="status" className="text-xs text-slate-600">
@@ -496,13 +530,17 @@ export const CardManagement = forwardRef<
           </>
         )}
         <Button variant="outline" onClick={() => setLogin(true)}>
-          {user
-            ? access.owner
-              ? '主管理者'
-              : access.manager
-                ? '管理者'
-                : '申请管理权限'
-            : '管理者登录'}
+          {accessStatus === 'checking'
+            ? '正在确认权限…'
+            : accessStatus === 'error'
+              ? '重试管理权限'
+              : user
+                ? access.owner
+                  ? '主管理者'
+                  : access.manager
+                    ? '管理者'
+                    : '申请管理权限'
+                : '管理者登录'}
         </Button>
       </div>
       {message && (
@@ -549,7 +587,16 @@ export const CardManagement = forwardRef<
           <DialogDescription>
             普通用户无需登录。设计团队验证邮箱并获批后，可使用名片记录等管理功能。
           </DialogDescription>
-          {!user ? (
+          {accessStatus === 'checking' ? (
+            <output>正在确认登录和管理权限…</output>
+          ) : accessStatus === 'error' ? (
+            <div className="grid gap-3">
+              <p>暂时无法连接权限服务，请重试确认。</p>
+              <Button onClick={() => void refreshIdentity()}>
+                重试确认权限
+              </Button>
+            </div>
+          ) : !user ? (
             <form
               className="grid gap-3"
               onSubmit={(e) => {
@@ -722,9 +769,23 @@ export const CardManagement = forwardRef<
           </div>
           {!access.manager ? (
             <div className="rounded-xl bg-white p-6">
-              <p>请登录并获得管理权限后查看。</p>
-              <Button className="mt-4" onClick={() => setLogin(true)}>
-                管理者登录
+              <p>
+                {accessStatus === 'checking'
+                  ? '正在确认管理权限…'
+                  : accessStatus === 'error'
+                    ? '管理权限暂时无法确认，请重试连接。'
+                    : '请登录并获得管理权限后查看。'}
+              </p>
+              <Button
+                className="mt-4"
+                disabled={accessStatus === 'checking'}
+                onClick={() =>
+                  accessStatus === 'error'
+                    ? void refreshIdentity()
+                    : setLogin(true)
+                }
+              >
+                {accessStatus === 'error' ? '重试确认权限' : '管理者登录'}
               </Button>
             </div>
           ) : (
@@ -793,41 +854,59 @@ export const CardManagement = forwardRef<
                       {records.map((row) => (
                         <TableRow key={row.id}>
                           <TableCell>
-                            <button
-                              className="instant-hint font-medium text-blue-700 underline"
-                              data-hint="点击进入制作页编辑"
-                              aria-label={`${row.name || '未填写姓名'}，点击进入制作页编辑`}
-                              onClick={() => loadRecord(row)}
-                            >
-                              {row.name || '未填写姓名'}
-                            </button>
+                            <Tooltip>
+                              <TooltipTrigger
+                                className="record-action font-medium"
+                                aria-label={`${row.name || '未填写姓名'}，点击进入制作页编辑`}
+                                onClick={() => loadRecord(row)}
+                              >
+                                <span>{row.name || '未填写姓名'}</span>
+                                <PencilLine aria-hidden="true" />
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-white text-foreground shadow-lg [&_svg]:bg-white [&_svg]:fill-white">
+                                点击进入制作页编辑
+                              </TooltipContent>
+                            </Tooltip>
                           </TableCell>
                           <TableCell>{row.title}</TableCell>
                           <TableCell>{row.phone}</TableCell>
                           <TableCell>{row.email}</TableCell>
                           <TableCell>
-                            <button
-                              className="block w-24 truncate text-left text-blue-700 underline"
-                              title={
-                                row.source === 'manual'
-                                  ? '手动制作'
-                                  : row.source
-                              }
-                              aria-label={`查看来源：${row.source}`}
-                              onClick={() => setSource(row)}
-                            >
-                              {row.source === 'manual'
-                                ? '手动制作'
-                                : Array.from(row.source).slice(0, 4).join('') +
-                                  (Array.from(row.source).length > 4
-                                    ? '…'
-                                    : '')}
-                            </button>
+                            <Tooltip>
+                              <TooltipTrigger
+                                className="record-action max-w-full text-left"
+                                aria-label={`查看来源：${row.source}`}
+                                onClick={() => setSource(row)}
+                              >
+                                <FileImage aria-hidden="true" />
+                                <span className="max-w-24 truncate">
+                                  {row.source === 'manual'
+                                    ? '手动制作'
+                                    : Array.from(row.source)
+                                        .slice(0, 4)
+                                        .join('') +
+                                      (Array.from(row.source).length > 4
+                                        ? '…'
+                                        : '')}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent className="flex-col items-start bg-white text-foreground shadow-lg [&_svg]:bg-white [&_svg]:fill-white">
+                                <span className="break-all">
+                                  {row.source === 'manual'
+                                    ? '手动制作'
+                                    : row.source}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  点击查看原图并核对
+                                </span>
+                              </TooltipContent>
+                            </Tooltip>
                             <span
                               className={
-                                row.needs_review
+                                'block ' +
+                                (row.needs_review
                                   ? 'text-amber-700'
-                                  : 'text-slate-500'
+                                  : 'text-slate-500')
                               }
                             >
                               {row.needs_review ? '待核对' : '已核对'}
@@ -1184,8 +1263,9 @@ export const CardManagement = forwardRef<
               {reviewImageStatus && <p role="status">{reviewImageStatus}</p>}
               {reviewImage && (
                 <SelectableSourceImage
-                  key={`${editing?.id}:${reviewImage}`}
+                  key={`${editing?.id}:${reviewImage}:${editing?.template}`}
                   src={reviewImage}
+                  template={editing?.template ?? 'chinese'}
                   onError={() => {
                     setReviewImage('');
                     setReviewImageStatus(
@@ -1282,6 +1362,6 @@ export const CardManagement = forwardRef<
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </TooltipProvider>
   );
 });
