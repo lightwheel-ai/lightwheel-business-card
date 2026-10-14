@@ -15,6 +15,20 @@ const API_URL = 'https://api.mymemory.translated.net/get';
 const hanOnly = /^[\p{Script=Han}·]+$/u;
 const containsHan = /\p{Script=Han}/u;
 const containsLatin = /[A-Za-z]/;
+// Session-only cache: never persist people's names in browser storage.
+const translations = new Map<string, string>();
+function remember(
+  kind: string,
+  source: string,
+  result: string,
+  from: Template,
+  to: Template,
+) {
+  if (translations.size >= 200) translations.clear();
+  translations.set(`${kind}:${from}:${source}`, result);
+  translations.set(`${kind}:${to}:${result}`, source);
+  return result;
+}
 
 const surnamePinyin: Record<string, string> = {
   张: 'zhang',
@@ -192,16 +206,30 @@ export async function translateName(
 ) {
   const source = name.trim();
   if (!source || from === to) return source;
+  const cached = translations.get(`name:${from}:${source}`);
+  if (cached !== undefined) return cached;
 
   if (from === 'english') {
-    return translateEnglishNameToChinese(source, signal);
+    return remember(
+      'name',
+      source,
+      await translateEnglishNameToChinese(source, signal),
+      from,
+      to,
+    );
   }
 
   const result = await requestTranslation(source, 'zh-CN', 'en-GB', signal);
   if (!containsLatin.test(result.translated)) {
     throw new Error('Unable to translate this name into English.');
   }
-  return westernizeRomanizedName(result.translated, source);
+  return remember(
+    'name',
+    source,
+    westernizeRomanizedName(result.translated, source),
+    from,
+    to,
+  );
 }
 
 export async function translateTitle(
@@ -212,16 +240,26 @@ export async function translateTitle(
 ) {
   const source = title.trim();
   if (!source || from === to) return source;
+  const cached = translations.get(`title:${from}:${source}`);
+  if (cached !== undefined) return cached;
 
   if (from === 'chinese') {
-    return (
+    return remember(
+      'title',
+      source,
       titleToEnglish[source] ??
-      (await requestTranslation(source, 'zh-CN', 'en-GB', signal)).translated
+        (await requestTranslation(source, 'zh-CN', 'en-GB', signal)).translated,
+      from,
+      to,
     );
   }
 
-  return (
+  return remember(
+    'title',
+    source,
     titleToChinese[source.toLocaleLowerCase()] ??
-    (await requestTranslation(source, 'en-GB', 'zh-CN', signal)).translated
+      (await requestTranslation(source, 'en-GB', 'zh-CN', signal)).translated,
+    from,
+    to,
   );
 }

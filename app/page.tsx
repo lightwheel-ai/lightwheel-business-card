@@ -289,19 +289,27 @@ export default function Home() {
     try {
       const { translateName, translateTitle } =
         await import('@/lib/translator');
+      const applyTranslatedField = (field: 'name' | 'title', value: string) => {
+        if (translationRequestRef.current !== requestId) return value;
+        setValues((current) => ({
+          ...current,
+          [nextTemplate]: { ...current[nextTemplate], [field]: value },
+        }));
+        return value;
+      };
       const [nameResult, titleResult] = await Promise.allSettled([
         translateName(
           sourceData.name,
           sourceTemplate,
           nextTemplate,
           controller.signal,
-        ),
+        ).then((value) => applyTranslatedField('name', value)),
         translateTitle(
           sourceData.title,
           sourceTemplate,
           nextTemplate,
           controller.signal,
-        ),
+        ).then((value) => applyTranslatedField('title', value)),
       ]);
 
       if (translationRequestRef.current !== requestId) return;

@@ -125,23 +125,42 @@ export const CardManagement = forwardRef<
   const [reviewImage, setReviewImage] = useState('');
   const [reviewImageStatus, setReviewImageStatus] = useState('');
   const [hasNextPage, setHasNextPage] = useState(false);
+  const imageUrls = useRef(new Map<string, { url: string; expires: number }>());
+  async function sourceImageUrl(id: string) {
+    const cached = imageUrls.current.get(id);
+    if (cached && cached.expires > Date.now()) {
+      return { data: { signedUrl: cached.url }, error: null };
+    }
+    const result = await supabase.storage
+      .from('card-sources')
+      .createSignedUrl(`${id}/source.png`, 600);
+    if (result.data?.signedUrl && !result.error) {
+      if (imageUrls.current.size >= 10)
+        imageUrls.current.delete(imageUrls.current.keys().next().value!);
+      imageUrls.current.set(id, {
+        url: result.data.signedUrl,
+        expires: Date.now() + 540_000,
+      });
+    }
+    return result;
+  }
+  useEffect(() => {
+    imageUrls.current.clear();
+  }, [user?.id, access.manager]);
   useEffect(() => {
     let live = true;
     setReviewImage('');
     if (!editing || !access.manager) return;
     setReviewImageStatus('正在加载原图…');
-    supabase.storage
-      .from('card-sources')
-      .createSignedUrl(`${editing.id}/source.png`, 600)
-      .then(({ data, error }) => {
-        if (!live) return;
-        setReviewImage(data?.signedUrl ?? '');
-        setReviewImageStatus(
-          error || !data?.signedUrl
-            ? '这条记录没有可用原图，请先在来源中补传图片。'
-            : '',
-        );
-      });
+    sourceImageUrl(editing.id).then(({ data, error }) => {
+      if (!live) return;
+      setReviewImage(data?.signedUrl ?? '');
+      setReviewImageStatus(
+        error || !data?.signedUrl
+          ? '这条记录没有可用原图，请先在来源中补传图片。'
+          : '',
+      );
+    });
     return () => {
       live = false;
     };
@@ -156,16 +175,13 @@ export const CardManagement = forwardRef<
     setSourceUrl('');
     if (!source || !access.manager) return;
     setSourceStatus('正在加载原图…');
-    supabase.storage
-      .from('card-sources')
-      .createSignedUrl(`${source.id}/source.png`, 60)
-      .then(({ data, error }) => {
-        if (!live) return;
-        setSourceUrl(data?.signedUrl ?? '');
-        setSourceStatus(
-          error ? '这条记录尚未保存原图，可以补传图片后核对。' : '',
-        );
-      });
+    sourceImageUrl(source.id).then(({ data, error }) => {
+      if (!live) return;
+      setSourceUrl(data?.signedUrl ?? '');
+      setSourceStatus(
+        error ? '这条记录尚未保存原图，可以补传图片后核对。' : '',
+      );
+    });
     return () => {
       live = false;
     };
@@ -439,9 +455,9 @@ export const CardManagement = forwardRef<
         .from('card_events')
         .select('id,action,created_at,snapshot')
         .eq('record_id', row.id)
-        .in('action', ['pdf', 'png'])
+        .in('action', ['edit', 'pdf', 'png'])
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(10);
       if (error) throw new Error('历史记录读取失败。');
       setHistory(data ?? []);
     } catch (error) {
@@ -931,16 +947,16 @@ export const CardManagement = forwardRef<
               </div>
               <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
                 <DialogContent className="sm:max-w-2xl max-h-[80svh] overflow-y-auto">
-                  <DialogTitle>历史版本（最近 100 个下载版本）</DialogTitle>
+                  <DialogTitle>历史版本（最近 10 个版本）</DialogTitle>
                   <DialogDescription>
-                    仅保留下载 PDF 或 PNG 时生成的版本。
+                    包括核对页保存的修改，以及首页下载 PDF 或 PNG 时生成的版本。
                   </DialogDescription>
                   {historyLoading ? (
                     <output>正在加载历史版本…</output>
                   ) : historyError ? (
                     <p role="alert">{historyError}</p>
                   ) : (
-                    !history.length && <p>暂无下载版本。</p>
+                    !history.length && <p>暂无历史版本。</p>
                   )}
                   {history.map((item) => (
                     <div
@@ -953,6 +969,7 @@ export const CardManagement = forwardRef<
                           {
                             pdf: 'PDF 下载',
                             png: 'PNG 下载',
+                            edit: '核对修改',
                           } as Record<string, string>
                         )[item.action] ?? item.action}{' '}
                         · {item.snapshot.name} / {item.snapshot.title}
@@ -1105,6 +1122,7 @@ export const CardManagement = forwardRef<
                 alt="导入名片原图"
                 className="mx-auto max-h-[60vh] max-w-full border border-slate-300 bg-white object-contain shadow-sm"
                 onError={() => {
+                  if (source) imageUrls.current.delete(source.id);
                   setSourceUrl('');
                   setSourceStatus('原图加载失败，请关闭后重新打开。');
                 }}
@@ -1226,6 +1244,7 @@ export const CardManagement = forwardRef<
                   src={reviewImage}
                   template={editing?.template ?? 'chinese'}
                   onError={() => {
+                    if (editing) imageUrls.current.delete(editing.id);
                     setReviewImage('');
                     setReviewImageStatus(
                       '原图加载失败，请关闭核对窗口后重试。',
