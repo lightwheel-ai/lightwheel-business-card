@@ -3,7 +3,13 @@ import { cmyk, PDFDocument, type PDFPage } from 'pdf-lib';
 import { loadPingFangPaths, type PathFace } from './pingfang';
 
 type Template = 'english' | 'chinese';
-type CardData = { name: string; title: string; phone: string; email: string };
+type CardData = {
+  name: string;
+  title: string;
+  phone: string;
+  email: string;
+  address: string;
+};
 
 type FontkitCommand = {
   command:
@@ -27,7 +33,6 @@ type FontkitFont = {
     }>;
   };
 };
-
 
 const englishBlue = cmyk(1, 0.8984375, 0.1796875, 0);
 const englishPhone = cmyk(0, 0, 0, 1);
@@ -106,7 +111,6 @@ async function loadIbmFonts() {
   return ibmFontsPromise;
 }
 
-
 function drawFontkitText(
   page: PDFPage,
   font: FontkitFont,
@@ -172,7 +176,7 @@ export async function createVectorCardPdf({
   assetUrl: (path: string) => string;
 }) {
   const templateResponse = await fetch(
-    assetUrl(`/templates/${template}-template-outlined.pdf?v=chinese-20260921`),
+    assetUrl(`/templates/${template}-template-outlined.pdf?v=address-20261104`),
   );
   if (!templateResponse.ok) throw new Error('Unable to load vector template.');
 
@@ -183,6 +187,20 @@ export async function createVectorCardPdf({
 
   if (template === 'english') {
     const pingFang = await loadPingFangPaths(assetUrl);
+    data.address
+      .split('\n')
+      .slice(0, 1)
+      .forEach((line, i) =>
+        drawPathFaceText(
+          page,
+          pingFang.regular,
+          line,
+          147.0,
+          122.654879 + i * 14.3545,
+          5.44272,
+          englishEmail,
+        ),
+      );
     drawPathFaceText(
       page,
       pingFang.medium,
@@ -221,6 +239,20 @@ export async function createVectorCardPdf({
     );
   } else {
     const ibm = await loadIbmFonts();
+    data.address
+      .split('\n')
+      .slice(0, 2)
+      .forEach((line, i) =>
+        drawFontkitText(
+          page,
+          ibm.regular,
+          line,
+          126.1,
+          123.535425 + i * 13.2343,
+          5.44272,
+          chinesePhone,
+        ),
+      );
     drawFontkitText(
       page,
       ibm.medium,

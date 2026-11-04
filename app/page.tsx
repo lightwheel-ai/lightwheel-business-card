@@ -21,7 +21,13 @@ import {
 } from '@/components/card-management';
 
 type Template = 'english' | 'chinese';
-type CardData = { name: string; title: string; phone: string; email: string };
+type CardData = {
+  name: string;
+  title: string;
+  phone: string;
+  email: string;
+  address: string;
+};
 type ExportState =
   | 'idle'
   | 'pdf-working'
@@ -49,12 +55,15 @@ const defaults: Record<Template, CardData> = {
     title: 'Marketing Director',
     phone: '+86 13800008888',
     email: 'ruiming.zhang@lightwheel.ai',
+    address: '2445 Augustine Dr Santa Clara, CA 95054',
   },
   chinese: {
     name: '张瑞明',
     title: '市场总监',
     phone: '13800008888',
     email: 'ruiming.zhang@lightwheel.ai',
+    address:
+      '北京市海淀区中关村(海淀)具身智能创新产业园B座6层\n上海市嘉定区于田大厦3楼',
   },
 };
 
@@ -127,7 +136,7 @@ function BusinessCard({
       <img
         aria-hidden="true"
         className="template-sheet"
-        src={assetUrl(`/templates/${template}-template.svg?v=chinese-20260921`)}
+        src={assetUrl(`/templates/${template}-template.svg?v=address-20261104`)}
         alt=""
       />
       <svg
@@ -139,6 +148,30 @@ function BusinessCard({
         }
         preserveAspectRatio="none"
       >
+        {data.address
+          .split('\n')
+          .slice(0, template === 'english' ? 1 : 2)
+          .map((line, index) => (
+            <text
+              key={index}
+              x={template === 'english' ? 369.7 : 126.1}
+              y={
+                template === 'english'
+                  ? 309.528 + index * 35.56
+                  : 123.5356 + index * 13.2343
+              }
+              fontFamily={
+                template === 'english'
+                  ? 'PingFang SC, sans-serif'
+                  : 'IBM Plex Sans SC, sans-serif'
+              }
+              fontSize={template === 'english' ? 13.4835 : 5.4427}
+              fontWeight="400"
+              fill="#241c1a"
+            >
+              {line}
+            </text>
+          ))}
         {template === 'english' ? (
           <>
             <text
@@ -279,7 +312,10 @@ export default function Home() {
     setTemplate(nextTemplate);
     setEditRevision((n) => n + 1);
     // Copy this person's contacts as well, never mix with the other template's example.
-    setValues((current) => ({ ...current, [nextTemplate]: { ...sourceData } }));
+    setValues((current) => ({
+      ...current,
+      [nextTemplate]: { ...sourceData, address: current[nextTemplate].address },
+    }));
     if (!sourceData.name.trim() && !sourceData.title.trim()) {
       setTranslationState('idle');
       return;
@@ -358,6 +394,7 @@ export default function Home() {
         title: parsed.title ?? defaults[template].title,
         phone: parsed.phone ?? defaults[template].phone,
         email: parsed.email ?? defaults[template].email,
+        address: data.address,
       },
     }));
   }
@@ -519,6 +556,7 @@ export default function Home() {
                   title: record.title,
                   phone: record.phone,
                   email: record.email,
+                  address: defaults[nextTemplate].address,
                 },
               }));
             }}
@@ -529,7 +567,7 @@ export default function Home() {
       <div className="app-shell px-5 sm:px-8">
         <div className="workspace-content mx-auto max-w-7xl">
           <div className="workspace-grid grid gap-5 py-6 lg:grid-cols-2">
-            <section className="editor-panel">
+            <section className="editor-panel" style={{ overflowY: 'auto' }}>
               <div className="mb-4">
                 <h1 className="text-2xl font-semibold tracking-[-0.025em]">
                   自动生成名片
@@ -617,6 +655,17 @@ export default function Home() {
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="col-span-2 space-y-2">
+                  <Label htmlFor="address">地址</Label>
+                  <Textarea
+                    id="address"
+                    rows={2}
+                    value={data.address}
+                    placeholder={defaults[template].address}
+                    onChange={(event) => update('address', event.target.value)}
+                    className="min-h-16 resize-none"
+                  />
+                </div>
                 <Button
                   type="button"
                   className="h-11"
