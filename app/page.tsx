@@ -208,7 +208,7 @@ function BusinessCard({
             </text>
             <text
               className="english-contact english-email"
-              x="92.0"
+              x="91.340"
               y="345.089"
               fill="#241c1a"
               fontFamily="PingFang SC, PingFang TC, sans-serif"

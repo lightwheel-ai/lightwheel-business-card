@@ -233,8 +233,8 @@ export async function createVectorCardPdf({
       page,
       pingFang.regular,
       data.email,
-      34.882044,
-      137.009371,
+      34.5818,
+      137.0095,
       6.00001,
       englishEmail,
     );
