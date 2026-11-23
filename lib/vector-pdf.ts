@@ -177,7 +177,7 @@ export async function createVectorCardPdf({
   assetUrl: (path: string) => string;
 }) {
   const templateResponse = await fetch(
-    assetUrl(`/templates/${template}-template-outlined.pdf?v=ai-20261123`),
+    assetUrl(`/templates/${template}-template-outlined.pdf?v=ai-20261123b`),
   );
   if (!templateResponse.ok) throw new Error('Unable to load vector template.');
 
