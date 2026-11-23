@@ -1,5 +1,6 @@
 import fontkit from '@pdf-lib/fontkit';
-import { cmyk, PDFDocument, popGraphicsState, pushGraphicsState, translate, type PDFPage } from 'pdf-lib';
+import { cmyk, PDFDocument, popGraphicsState, pushGraphicsState, scale as scaleAxes, type PDFPage } from 'pdf-lib';
+import { chineseAddressRuns } from './chinese-address';
 import { loadPingFangPaths, type PathFace } from './pingfang';
 
 type Template = 'english' | 'chinese';
@@ -176,7 +177,7 @@ export async function createVectorCardPdf({
   assetUrl: (path: string) => string;
 }) {
   const templateResponse = await fetch(
-    assetUrl(`/templates/${template}-template-outlined.pdf?v=layout-20261123`),
+    assetUrl(`/templates/${template}-template-outlined.pdf?v=ai-20261123`),
   );
   if (!templateResponse.ok) throw new Error('Unable to load vector template.');
 
@@ -239,21 +240,23 @@ export async function createVectorCardPdf({
     );
   } else {
     const ibm = await loadIbmFonts();
-    page.pushOperators(pushGraphicsState(), translate(-6.35, 0));
+    page.pushOperators(pushGraphicsState(), scaleAxes(.97, 1));
     data.address
       .split('\n')
       .slice(0, 2)
-      .forEach((line, i) =>
+      .flatMap(chineseAddressRuns)
+      .forEach(({text, x, y}) =>
         drawFontkitText(
           page,
           ibm.regular,
-          line,
-          126.1,
-          123.535425 + i * 13.2343,
-          5.44272,
+          text,
+          x / .97,
+          y,
+          5.1,
           chinesePhone,
         ),
       );
+    page.pushOperators(popGraphicsState());
     drawFontkitText(
       page,
       ibm.medium,
@@ -278,7 +281,7 @@ export async function createVectorCardPdf({
       data.phone,
       34.582506,
       123.535425,
-      5.44272,
+      5.2,
       chinesePhone,
     );
     const pingFang = await loadPingFangPaths(assetUrl);
@@ -288,10 +291,9 @@ export async function createVectorCardPdf({
       data.email,
       35.0229,
       136.7699,
-      5.4427,
+      5.2,
       chineseEmail,
     );
-    page.pushOperators(popGraphicsState());
   }
 
   // Split the existing artwork without scaling or rasterizing it. Give both

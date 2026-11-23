@@ -15,6 +15,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { parseCardData } from '@/lib/card-parser';
 import { loadPingFangPaths, type PathFace } from '@/lib/pingfang';
+import { chineseAddressRuns } from '@/lib/chinese-address';
 import {
   CardManagement,
   type ManagementHandle,
@@ -85,7 +86,7 @@ function ChineseEmail({ text }: { text: string }) {
       <text
         x="35.0229"
         y="136.7699"
-        fontSize="5.4427"
+        fontSize="5.2"
         fontFamily="PingFang SC"
         fill="#221714"
         data-font-ready="false"
@@ -93,7 +94,7 @@ function ChineseEmail({ text }: { text: string }) {
         {text}
       </text>
     );
-  const scale = 5.4427 / face.unitsPerEm;
+  const scale = 5.2 / face.unitsPerEm;
   let cursor = 0;
   return (
     <g
@@ -136,7 +137,7 @@ function BusinessCard({
       <img
         aria-hidden="true"
         className="template-sheet"
-        src={assetUrl(`/templates/${template}-template.svg?v=layout-20261123`)}
+        src={assetUrl(`/templates/${template}-template.svg?v=ai-20261123`)}
         alt=""
       />
       <svg
@@ -148,29 +149,26 @@ function BusinessCard({
         }
         preserveAspectRatio="none"
       >
-        <g transform={template === 'chinese' ? 'translate(-6.35 0)' : undefined}>
         {data.address
           .split('\n')
           .slice(0, template === 'english' ? 1 : 2)
-          .map((line, index) => (
+          .flatMap((line, index) => template === 'chinese' ? chineseAddressRuns(line, index) : [{ text: line, x: 369.7, y: 309.528 }])
+          .map(({text, x, y}, index) => (
             <text
               key={index}
-              x={template === 'english' ? 369.7 : 126.1}
-              y={
-                template === 'english'
-                  ? 309.528 + index * 35.56
-                  : 123.5356 + index * 13.2343
-              }
+              transform={template === 'chinese' ? `translate(${x} ${y}) scale(.97 1)` : undefined}
+              x={template === 'english' ? x : 0}
+              y={template === 'english' ? y : 0}
               fontFamily={
                 template === 'english'
                   ? 'PingFang SC, sans-serif'
                   : 'IBM Plex Sans SC, sans-serif'
               }
-              fontSize={template === 'english' ? 13.4835 : 5.4427}
+              fontSize={template === 'english' ? 13.4835 : 5.1}
               fontWeight="400"
               fill="#241c1a"
             >
-              {line}
+              {text}
             </text>
           ))}
         {template === 'english' ? (
@@ -250,7 +248,7 @@ function BusinessCard({
               y="123.5356"
               fill="#241c1a"
               fontFamily="IBM Plex Sans SC, sans-serif"
-              fontSize="5.4427"
+              fontSize="5.2"
               fontWeight="400"
             >
               {data.phone}
@@ -258,7 +256,6 @@ function BusinessCard({
             <ChineseEmail text={data.email} />
           </>
         )}
-        </g>
       </svg>
     </div>
   );
