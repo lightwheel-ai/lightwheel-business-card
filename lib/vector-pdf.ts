@@ -292,7 +292,24 @@ export async function createVectorCardPdf({
     );
   }
 
-  const bytes = await document.save();
+  // Split the existing artwork without scaling or rasterizing it. Give both
+  // faces their own zero-origin page box so Illustrator imports two artboards.
+  const output = await PDFDocument.create();
+  // Separate copies avoid sharing the mutable content array between faces.
+  const [front] = await output.copyPages(document, [0]);
+  const [back] = await output.copyPages(document, [0]);
+  const width = page.getWidth();
+  const height = page.getHeight() / 2;
+  front.translateContent(0, -height);
+  for (const face of [front, back]) {
+    face.setMediaBox(0, 0, width, height);
+    face.setCropBox(0, 0, width, height);
+    face.setTrimBox(0, 0, width, height);
+    face.setBleedBox(0, 0, width, height);
+    face.setArtBox(0, 0, width, height);
+    output.addPage(face);
+  }
+  const bytes = await output.save();
   const buffer = bytes.buffer.slice(
     bytes.byteOffset,
     bytes.byteOffset + bytes.byteLength,
