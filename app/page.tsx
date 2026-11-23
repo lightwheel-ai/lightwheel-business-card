@@ -136,7 +136,7 @@ function BusinessCard({
       <img
         aria-hidden="true"
         className="template-sheet"
-        src={assetUrl(`/templates/${template}-template.svg?v=address-20261104`)}
+        src={assetUrl(`/templates/${template}-template.svg?v=layout-20261123`)}
         alt=""
       />
       <svg
@@ -148,6 +148,7 @@ function BusinessCard({
         }
         preserveAspectRatio="none"
       >
+        <g transform={template === 'chinese' ? 'translate(-6.35 0)' : undefined}>
         {data.address
           .split('\n')
           .slice(0, template === 'english' ? 1 : 2)
@@ -257,6 +258,7 @@ function BusinessCard({
             <ChineseEmail text={data.email} />
           </>
         )}
+        </g>
       </svg>
     </div>
   );

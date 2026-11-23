@@ -1,5 +1,5 @@
 import fontkit from '@pdf-lib/fontkit';
-import { cmyk, PDFDocument, type PDFPage } from 'pdf-lib';
+import { cmyk, PDFDocument, popGraphicsState, pushGraphicsState, translate, type PDFPage } from 'pdf-lib';
 import { loadPingFangPaths, type PathFace } from './pingfang';
 
 type Template = 'english' | 'chinese';
@@ -176,7 +176,7 @@ export async function createVectorCardPdf({
   assetUrl: (path: string) => string;
 }) {
   const templateResponse = await fetch(
-    assetUrl(`/templates/${template}-template-outlined.pdf?v=address-20261104`),
+    assetUrl(`/templates/${template}-template-outlined.pdf?v=layout-20261123`),
   );
   if (!templateResponse.ok) throw new Error('Unable to load vector template.');
 
@@ -239,6 +239,7 @@ export async function createVectorCardPdf({
     );
   } else {
     const ibm = await loadIbmFonts();
+    page.pushOperators(pushGraphicsState(), translate(-6.35, 0));
     data.address
       .split('\n')
       .slice(0, 2)
@@ -290,6 +291,7 @@ export async function createVectorCardPdf({
       5.4427,
       chineseEmail,
     );
+    page.pushOperators(popGraphicsState());
   }
 
   // Split the existing artwork without scaling or rasterizing it. Give both
