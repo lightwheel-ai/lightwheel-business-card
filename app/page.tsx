@@ -84,9 +84,9 @@ function ChineseEmail({ text }: { text: string }) {
   if (!face)
     return (
       <text
-        x="35.0229"
+        x="34.5825"
         y="136.7699"
-        fontSize="5.2"
+        fontSize="5.5"
         fontFamily="PingFang SC"
         fill="#221714"
         data-font-ready="false"
@@ -94,14 +94,14 @@ function ChineseEmail({ text }: { text: string }) {
         {text}
       </text>
     );
-  const scale = 5.2 / face.unitsPerEm;
+  const scale = 5.5 / face.unitsPerEm;
   let cursor = 0;
   return (
     <g
       fill="#221714"
       data-font-ready="true"
       aria-label={text}
-      transform={`translate(35.0229 136.7699) scale(${scale})`}
+      transform={`translate(34.5825 136.7699) scale(${scale})`}
     >
       {Array.from(text).map((char, index) => {
         const glyph = face.glyphs[char] ?? face.glyphs['?'];
@@ -164,7 +164,7 @@ function BusinessCard({
                   ? 'PingFang SC, sans-serif'
                   : 'IBM Plex Sans SC, sans-serif'
               }
-              fontSize={template === 'english' ? 13.4835 : 5.1}
+              fontSize={template === 'english' ? 13.4835 : 5.2}
               fontWeight="400"
               fill="#241c1a"
             >
@@ -248,7 +248,7 @@ function BusinessCard({
               y="123.5356"
               fill="#241c1a"
               fontFamily="IBM Plex Sans SC, sans-serif"
-              fontSize="5.2"
+              fontSize="5.5"
               fontWeight="400"
             >
               {data.phone}

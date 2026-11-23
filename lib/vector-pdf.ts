@@ -252,7 +252,7 @@ export async function createVectorCardPdf({
           text,
           x / .97,
           y,
-          5.1,
+          5.2,
           chinesePhone,
         ),
       );
@@ -279,9 +279,9 @@ export async function createVectorCardPdf({
       page,
       ibm.regular,
       data.phone,
-      34.582506,
-      123.535425,
-      5.2,
+      34.5825,
+      123.5356,
+      5.5,
       chinesePhone,
     );
     const pingFang = await loadPingFangPaths(assetUrl);
@@ -289,9 +289,9 @@ export async function createVectorCardPdf({
       page,
       pingFang.regular,
       data.email,
-      35.0229,
+      34.5825,
       136.7699,
-      5.2,
+      5.5,
       chineseEmail,
     );
   }
