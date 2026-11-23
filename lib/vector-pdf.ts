@@ -191,13 +191,13 @@ export async function createVectorCardPdf({
     data.address
       .split('\n')
       .slice(0, 1)
-      .forEach((line, i) =>
+      .forEach((line) =>
         drawPathFaceText(
           page,
           pingFang.regular,
           line,
-          147.0,
-          122.654879 + i * 14.3545,
+          147.4058,
+          123.655,
           5.44272,
           englishEmail,
         ),
@@ -224,8 +224,8 @@ export async function createVectorCardPdf({
       page,
       pingFang.regular,
       data.phone,
-      34.581751,
-      122.654879,
+      34.5815,
+      123.655,
       6.00001,
       englishPhone,
     );

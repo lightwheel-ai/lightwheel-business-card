@@ -152,7 +152,7 @@ function BusinessCard({
         {data.address
           .split('\n')
           .slice(0, template === 'english' ? 1 : 2)
-          .flatMap((line, index) => template === 'chinese' ? chineseAddressRuns(line, index) : [{ text: line, x: 369.7, y: 309.528 }])
+          .flatMap((line, index) => template === 'chinese' ? chineseAddressRuns(line, index) : [{ text: line, x: 370.845, y: 312.005 }])
           .map(({text, x, y}, index) => (
             <text
               key={index}
@@ -197,8 +197,8 @@ function BusinessCard({
             </text>
             <text
               className="english-contact english-phone"
-              x="91.341"
-              y="309.528"
+              x="91.339"
+              y="312.005"
               fill="#241c1a"
               fontFamily="PingFang SC, PingFang TC, sans-serif"
               fontSize="14.8641"
